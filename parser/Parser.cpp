@@ -79,6 +79,35 @@ namespace parser {
     }
 
 
+    std::optional<Statement*> Parser::expect_variable_definition() {
+        if (!expect_identifier("var").has_value()) { return std::nullopt; }
+
+        // expect variable type
+        std::optional<tokenizer::Token*> typeToken = expect_type();
+        if (!typeToken.has_value()) { --cTokenI; return std::nullopt; }
+
+        // expect variable name
+        std::optional<tokenizer::Token*> nameToken = expect_identifier();
+        if (!nameToken.has_value()) { cTokenI-=2; return std::nullopt; }
+
+        // expect initialization
+        if (!expect_operator("=").has_value()) { error(cToken, "Expected '=' in variable initialization"); }
+
+        // expect default value
+        std::optional<Statement*> defVal = expect_value_expression();
+        if (!defVal.has_value()) { error(cToken, "Expected variable initial value"); }
+
+        // expect semicolon to end the command
+        if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
+
+        Statement* stmt = new Statement(StatementType::VARIABLE_DEFINITON, nameToken.value()->value);
+        stmt->dataType = typeToken.value()->value;
+        stmt->statements.emplace_back(defVal.value());
+        
+        return stmt;
+    }
+
+
     std::optional<Statement*> Parser::expect_function() {
         // expect "def" keyword
         if (!expect_identifier("def").has_value()) { return std::nullopt; }
@@ -140,6 +169,14 @@ namespace parser {
             retExpr->statements.emplace_back(retVal.value());
             if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
             return retExpr;
+        }
+
+        std::optional<Statement*> temp;
+
+        // variable definition
+        temp = expect_variable_definition();
+        if (temp.has_value()) {
+            return temp;
         }
     }
 

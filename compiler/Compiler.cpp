@@ -44,35 +44,57 @@ namespace compiler {
         Builder.SetInsertPoint(entryBlock);
         
         for (parser::Statement* s : statement->statements) {
-            compileExpression(s, mod);
+            compileExpression(s, mod, F);
         }
 
         llvm::verifyFunction(*F);
     }
 
-    llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod) {
-        Builder.CreateRet(compileValueExpression(statement->statements[0], mod));
+    llvm::AllocaInst* allocateEntry(llvm::Function* func, llvm::Type* t, const std::string& name) {
+        llvm::IRBuilder<> tmpB(&func->getEntryBlock(), func->getEntryBlock().begin());
+        return tmpB.CreateAlloca(t, 0, name.c_str());
     }
 
-    llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod) {
+    llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod, llvm::Function* func) {
+        Builder.CreateRet(compileValueExpression(statement->statements[0], mod, func));
+    }
+
+    llvm::StoreInst* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func) {
+        llvm::AllocaInst* alloca = allocateEntry(func, compileType(statement->dataType), statement->value);
+        llvm::Value* initialValue = compileValueExpression(statement->statements[0], mod, func);
+
+        return Builder.CreateStore(initialValue, alloca);
+    }
+
+    llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func) {
         if (statement->type == parser::StatementType::INTEGER_LITERAL) {
             return llvm::ConstantInt::get(llvmContext, llvm::APInt(32, std::stoi(statement->value)));
         }
     }
 
-    llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod) {
+    llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func) {
         // code block
         if (statement->type == parser::StatementType::CODE_BLOCK) {
             for (parser::Statement* s : statement->statements) {
-                compileExpression(s, mod);
+                compileExpression(s, mod, func);
             }
         }
 
         // return
         if (statement->type == parser::StatementType::RETURN) {
-            compileReturn(statement, mod);
+            compileReturn(statement, mod, func);
             return nullptr;
         }
+
+        // variable definition
+        if (statement->type == parser::StatementType::VARIABLE_DEFINITON) {
+            compileVariableDefinition(statement, mod, func);
+            return nullptr;
+        }
+    }
+
+    llvm::Type* compileType(const std::string& type) {
+        if (type == "int") return llvm::Type::getInt32Ty(llvmContext);
     }
 
 }

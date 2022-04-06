@@ -11,6 +11,7 @@ namespace parser {
         CODE_BLOCK = 1,
         RETURN = 2,
         INTEGER_LITERAL = 3,
+        VARIABLE_DEFINITON = 4,
     };
         
     class Statement {

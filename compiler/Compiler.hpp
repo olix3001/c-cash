@@ -20,8 +20,13 @@ namespace compiler {
     llvm::Module* compileModule(std::vector<parser::Statement*> module);
 
     llvm::Function* compileFunction(parser::Statement* statement, llvm::Module* mod);
-    llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod);
-    llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod);
-    llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod);
+    llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func);
+    llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func);
+    llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod, llvm::Function* func);
+    llvm::StoreInst* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func);
+
+    llvm::AllocaInst* allocateEntry(llvm::Function* func, llvm::Type* t, const std::string& name);
+
+    llvm::Type* compileType(const std::string& type);
 
 }

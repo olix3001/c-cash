@@ -27,6 +27,8 @@ namespace parser {
             static std::optional<Statement*> expect_expression();
             static std::optional<Statement*> expect_value_expression();
 
+            static std::optional<Statement*> expect_variable_definition();
+
             static std::optional<tokenizer::Token*> expect_identifier(const std::string& name);
             static std::optional<tokenizer::Token*> expect_operator(const std::string& name);
             static std::optional<tokenizer::Token*> expect_type(const std::string& name);
