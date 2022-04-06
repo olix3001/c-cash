@@ -20,15 +20,21 @@ namespace parser {
         Tokens = tokens;
         std::vector<Statement*> result;
 
+        std::cout << "Compilation debug:\n";
+
+        get_next();
         while(is_next()) {
-            get_next();
+
             // parse function declaration
             std::optional<Statement*> fDefinition = expect_function();
             if (fDefinition.has_value()) {
                 result.emplace_back(fDefinition.value());
+            } else {
+                error(cToken, "Expected global definition like function, variable or class");
             }
         }
 
+        std::cout << result.size() << '\n';
         return result;
     }
 
@@ -39,6 +45,14 @@ namespace parser {
         std::regex pattern("[A-Za-z_]\\w*");
         std::smatch result;
         if(!regex_match(cToken->value, result, pattern)) error(cToken, "You can only use letters, digits and _ in identifiers"); 
+
+        tokenizer::Token* returnToken = cToken;
+        get_next();
+        return returnToken;
+    }
+
+    std::optional<tokenizer::Token*> Parser::expect_integer() {
+        if(cToken->type != tokenizer::TokenType::INTEGER ) { return std::nullopt; }
 
         tokenizer::Token* returnToken = cToken;
         get_next();
@@ -80,8 +94,53 @@ namespace parser {
         Statement* fd = new Statement(StatementType::FUNCTION_DEFINITION, nameToken.value()->value);
         fd->dataType = typeToken.value()->value;
 
+        // arguments
+        if (!expect_operator("(").has_value()) { error(cToken, "Expected '('"); }
+        // TODO: support arguments
+        if (!expect_operator(")").has_value()) { error(cToken, "Expected ')'"); }
+
+        // function
+        std::optional<Statement*> expr = expect_expression();
+        if (!expr.has_value()) { error(cToken, "Expected function body"); }
+        fd->statements.emplace_back(expr.value());
+
         return fd;
-        // todo: implement rest
+    }
+
+    std::optional<Statement*> Parser::expect_value_expression() {
+        // primitives
+        std::optional<tokenizer::Token*> ct;
+
+        if ((ct = expect_integer()).has_value()) {
+            return new Statement(StatementType::INTEGER_LITERAL, ct.value()->value);
+        }
+    }
+
+    std::optional<Statement*> Parser::expect_expression() {
+        // block
+        if (expect_operator("{").has_value()) {
+            Statement* stmt = new Statement(StatementType::CODE_BLOCK, "");
+            while (true) {
+                if (expect_operator("}").has_value()) break;
+
+                std::optional<Statement*> expr = expect_expression();
+                stmt->statements.emplace_back(expr.value());
+
+                if (!expr.has_value()) { error(cToken, "Expected expression or '}'"); }
+            }
+            return stmt;
+        }
+
+        // return
+        if (expect_identifier("return").has_value()) {
+            std::optional<Statement*> retVal = expect_value_expression();
+            if (!retVal.has_value()) { error(cToken, "Expected return value"); }
+
+            Statement* retExpr = new Statement(StatementType::RETURN, "");
+            retExpr->statements.emplace_back(retVal.value());
+            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
+            return retExpr;
+        }
     }
 
 

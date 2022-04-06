@@ -9,7 +9,11 @@ namespace compiler {
         // create module
         llvm::Module* mod = new llvm::Module("test", llvmContext);
 
-        compileFunction(module[0], mod);
+        for (parser::Statement* s : module) {
+            if (s->type == parser::StatementType::FUNCTION_DEFINITION)
+                compileFunction(s, mod);
+        }
+        
 
         mod->print(llvm::errs(), nullptr);
 
@@ -38,9 +42,37 @@ namespace compiler {
         llvm::BasicBlock* entryBlock = llvm::BasicBlock::Create(llvmContext, "entry", F);
 
         Builder.SetInsertPoint(entryBlock);
-        Builder.CreateRet(llvm::ConstantInt::get(llvmContext, llvm::APInt(32, 0)));
+        
+        for (parser::Statement* s : statement->statements) {
+            compileExpression(s, mod);
+        }
 
         llvm::verifyFunction(*F);
+    }
+
+    llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod) {
+        Builder.CreateRet(compileValueExpression(statement->statements[0], mod));
+    }
+
+    llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod) {
+        if (statement->type == parser::StatementType::INTEGER_LITERAL) {
+            return llvm::ConstantInt::get(llvmContext, llvm::APInt(32, std::stoi(statement->value)));
+        }
+    }
+
+    llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod) {
+        // code block
+        if (statement->type == parser::StatementType::CODE_BLOCK) {
+            for (parser::Statement* s : statement->statements) {
+                compileExpression(s, mod);
+            }
+        }
+
+        // return
+        if (statement->type == parser::StatementType::RETURN) {
+            compileReturn(statement, mod);
+            return nullptr;
+        }
     }
 
 }

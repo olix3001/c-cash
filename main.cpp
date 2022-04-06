@@ -1,5 +1,6 @@
 #include "tokenizer/Tokenizer.hpp"
 #include "parser/Parser.hpp"
+#include "parser/Statements.hpp"
 #include "compiler/Compiler.hpp"
 
 #include <string>
@@ -30,7 +31,8 @@ int main(int argc, char **argv) {
     std::vector<parser::Statement*> AST = parser::Parser::parse(tokens);
 
     for (auto s : AST) {
-        std::cout << s->value << "\n";
+        s->debug_print(0);
+        std::cout << s->value;//s->value << "\n";
     }
 
     compiler::compileModule(AST);

@@ -8,6 +8,7 @@ namespace tokenizer {
         currentToken.value = "";
 
         for (char cChar : data) {
+            ++currentToken.charNo;
             
             if (cChar == ' ' || cChar == '\n' || cChar == '\t') { // whitespace, new line etc
                     if (currentToken.type != TokenType::UNDEFINED) {
@@ -15,7 +16,7 @@ namespace tokenizer {
                         currentToken.type = TokenType::UNDEFINED;
                         currentToken.value = "";
                     }
-
+                    if (cChar == '\n') { currentToken.charNo = 0; currentToken.lineNo++; }
 
             } else if (isdigit(cChar)) { // number
                 if (currentToken.type == TokenType::INTEGER || currentToken.type == TokenType::DOUBLE) {

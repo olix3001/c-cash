@@ -7,7 +7,10 @@
 namespace parser {
 
     enum StatementType {
-        FUNCTION_DEFINITION,
+        FUNCTION_DEFINITION = 0,
+        CODE_BLOCK = 1,
+        RETURN = 2,
+        INTEGER_LITERAL = 3,
     };
         
     class Statement {
@@ -22,7 +25,7 @@ namespace parser {
             Statement( StatementType type, std::string value ) : type( type ), value( value ) {};
             virtual ~Statement() = default;
 
-            void debug_print(size_t indent);
+            void debug_print(int indent);
     };
 
 }

@@ -1,3 +1,7 @@
 def int main() {
+    return 0;
+}
+
+def void test() {
     
 }

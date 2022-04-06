@@ -27,6 +27,7 @@ set (TOKENIZER
 )
 set (PARSER
     parser/Parser.cpp
+    parser/Statements.cpp
     
 )
 set (COMPILER

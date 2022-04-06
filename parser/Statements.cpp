@@ -2,7 +2,7 @@
 
 namespace parser {
     
-    void Statement::debug_print(size_t indent) {
+    void Statement::debug_print(int indent) {
         std::cout << std::string(indent, '\t') << "\u001B[36m" << dataType << " ";
         std::cout << "\u001B[33m" << type << " " << "\u001B[32m" << value << "\u001B[0m" << " (\n";
         for(Statement* statement : statements) {

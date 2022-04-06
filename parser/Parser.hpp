@@ -13,7 +13,7 @@
 
 namespace parser {
 
-    const std::string data_types[] = {"int", "float", "double", "long", "bool"};
+    const std::string data_types[] = {"void", "int", "float", "double", "long", "bool"};
 
     class Parser {
 
@@ -24,10 +24,13 @@ namespace parser {
             static std::vector<Statement*> parse(std::vector<tokenizer::Token> tokens);
 
             static std::optional<Statement*> expect_function();
+            static std::optional<Statement*> expect_expression();
+            static std::optional<Statement*> expect_value_expression();
 
             static std::optional<tokenizer::Token*> expect_identifier(const std::string& name);
             static std::optional<tokenizer::Token*> expect_operator(const std::string& name);
             static std::optional<tokenizer::Token*> expect_type(const std::string& name);
+            static std::optional<tokenizer::Token*> expect_integer();
 
             static void error(tokenizer::Token* token, const std::string& message);
 
