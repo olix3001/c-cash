@@ -22,6 +22,7 @@ namespace parser {
         TYPE_CAST = 9,
         LONG_LITERAL = 10,
         CHAR_LITERAL = 11,
+        LOGIC_EXPRESSION = 12,
     };
         
     struct Scope {

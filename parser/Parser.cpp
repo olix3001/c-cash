@@ -126,7 +126,7 @@ namespace parser {
         if (!typeToken.has_value()) { --cTokenI; get_next(); return std::nullopt; }
 
         // expect value to cast
-        std::optional<Statement*> val = expect_value_expression(false);
+        std::optional<Statement*> val = expect_value_expression(false, false);
         if (!val.has_value()) { error(cToken, "Expected value for a type cast"); }
 
         Statement* stmt = new Statement(StatementType::TYPE_CAST, typeToken.value()->value);
@@ -150,7 +150,7 @@ namespace parser {
         if (!expect_operator("=").has_value()) { error(cToken, "Expected '=' in variable initialization"); }
 
         // expect default value
-        std::optional<Statement*> defVal = expect_value_expression(false);
+        std::optional<Statement*> defVal = expect_value_expression(false, false);
         if (!defVal.has_value()) { error(cToken, "Expected variable initial value"); }
 
         Statement* stmt = new Statement(StatementType::VARIABLE_DEFINITON, nameToken.value()->value);
@@ -218,7 +218,7 @@ namespace parser {
                 if (!expect_operator(",").has_value()) { error(cToken, "Expected ',' to separate function arguments"); }
             }
 
-            std::optional<Statement*> argS = expect_value_expression(false);
+            std::optional<Statement*> argS = expect_value_expression(false, false);
             if (argS.has_value()) {
                 fptr->statements.emplace_back(argS.value());
             }
@@ -227,6 +227,37 @@ namespace parser {
 
         return fptr;
     }
+
+    std::optional<Statement*> Parser::expect_logic_expression() {
+        int tokenIB = cTokenI;
+        std::optional<Statement*> LHS = expect_value_expression(false, true);
+        if (!LHS.has_value()) { return std::nullopt; }
+
+        auto tmp = expect_logic_RHS(LHS.value());
+        if (!tmp.has_value()) {
+            cTokenI = tokenIB-1;
+            get_next();
+            return std::nullopt;
+        }
+
+        return tmp;
+    }
+    std::optional<Statement*> Parser::expect_logic_RHS(Statement* LHS) {
+        std::optional<tokenizer::Token*> OP = expect_operator("");
+
+        if (!OP.has_value() || std::find(std::begin(logic_ops), std::end(logic_ops), OP.value()->value) == std::end(logic_ops)) { return std::nullopt; }
+        std::optional<tokenizer::Token*> OPI = expect_operator("=");
+
+        std::optional<Statement*> RHS = expect_value_expression(false, false);
+        if (!RHS.has_value()) { error(cToken, "Expected right side of logic operation"); }
+
+        Statement* ms = new Statement(StatementType::LOGIC_EXPRESSION, OP.value()->value + (OPI.has_value() ? OPI.value()->value : ""));
+        ms->statements.emplace_back(LHS);
+        ms->statements.emplace_back(RHS.value());
+
+        return ms;
+    }
+
 
     int get_precedence(tokenizer::Token* token) {
         if (!isascii(token->value[0])) {
@@ -241,7 +272,7 @@ namespace parser {
     }
     std::optional<Statement*> Parser::expect_binary_expression() {
         int tokenIB = cTokenI;
-        std::optional<Statement*> LHS = expect_value_expression(true);
+        std::optional<Statement*> LHS = expect_value_expression(true, true);
         if (!LHS.has_value()) { return std::nullopt; }
         // Statement* ms = new Statement(StatementType::INTEGER_LITERAL, "1");
         // return ms;
@@ -258,7 +289,7 @@ namespace parser {
 
         if (!OP.has_value() || std::find(std::begin(math_ops), std::end(math_ops), OP.value()->value) == std::end(math_ops)) { return std::nullopt; }
 
-        std::optional<Statement*> RHS = expect_value_expression(false);
+        std::optional<Statement*> RHS = expect_value_expression(false, false);
         if (!RHS.has_value()) { error(cToken, "Expected right side of binary operation"); }
 
         Statement* ms = new Statement(StatementType::MATH, OP.value()->value);
@@ -268,16 +299,20 @@ namespace parser {
         return ms;
     }
 
-    std::optional<Statement*> Parser::expect_value_expression(bool skipBin) {
+    std::optional<Statement*> Parser::expect_value_expression(bool skipBin, bool skipLog) {
 
         std::optional<Statement*> cs;
+
         // type cast
         if ((cs = expect_type_cast()).has_value()) { 
             return cs.value();
         }
-        
         // binary expression
         if (!skipBin && (cs = expect_binary_expression()).has_value()) {
+            return cs.value();
+        }
+
+        if (!skipLog && (cs = expect_logic_expression()).has_value()) {
             return cs.value();
         }
 
@@ -326,7 +361,7 @@ namespace parser {
 
         // return
         if (expect_identifier("return").has_value()) {
-            std::optional<Statement*> retVal = expect_value_expression(false);
+            std::optional<Statement*> retVal = expect_value_expression(false, false);
             if (!retVal.has_value()) { error(cToken, "Expected return value"); }
 
             Statement* retExpr = new Statement(StatementType::RETURN, "");

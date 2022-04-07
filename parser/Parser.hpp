@@ -15,6 +15,7 @@ namespace parser {
 
     const std::string data_types[] = {"void", "int", "float", "double", "long", "bool", "char"};
     const std::string math_ops[] = {"+", "-", "*", "/"};
+    const std::string logic_ops[] = {"<", ">", "!", "="};
 
     class Parser {
 
@@ -27,9 +28,12 @@ namespace parser {
             static std::optional<Statement*> expect_function();
             static std::optional<Statement*> expect_expression();
             static std::optional<Statement*> expect_variable_call();
-            static std::optional<Statement*> expect_value_expression(bool skipBin);
+            static std::optional<Statement*> expect_value_expression(bool skipBin, bool skipLog);
             static std::optional<Statement*> expect_function_call();
             static std::optional<Statement*> expect_type_cast();
+
+            static std::optional<Statement*> expect_logic_expression();
+            static std::optional<Statement*> expect_logic_RHS(Statement* LHS);
 
             static std::optional<Statement*> expect_binary_expression();
             static std::optional<Statement*> expect_binary_RHS(int prec, Statement* LHS);

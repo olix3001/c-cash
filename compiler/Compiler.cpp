@@ -70,6 +70,8 @@ namespace compiler {
         }
 
         llvm::verifyFunction(*F);
+
+        return F;
     }
 
     llvm::AllocaInst* allocateEntry(llvm::Function* func, llvm::Type* t, const std::string& name) {
@@ -78,7 +80,7 @@ namespace compiler {
     }
 
     llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
-        Builder.CreateRet(compileValueExpression(statement->statements[0], mod, func, scope));
+        return Builder.CreateRet(compileValueExpression(statement->statements[0], mod, func, scope));
     }
 
     llvm::Value* compileVariableCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
@@ -136,6 +138,53 @@ namespace compiler {
         }
     }
 
+    llvm::Value* compileLogicExpr(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        if (statement->value.size() == 1) {
+            switch (statement->value[0]) {
+                case '<':
+                    return Builder.CreateICmpSLT(
+                        compileValueExpression(statement->statements[0], mod, func, scope), 
+                        compileValueExpression(statement->statements[1], mod, func, scope), 
+                        "lttmp"
+                    );
+                case '>':
+                    return Builder.CreateICmpSGT(
+                        compileValueExpression(statement->statements[0], mod, func, scope), 
+                        compileValueExpression(statement->statements[1], mod, func, scope), 
+                        "gttmp"
+                    );
+            }
+        } else {
+            switch(statement->value[0]) {
+                case '<':
+                    return Builder.CreateICmpSLE(
+                        compileValueExpression(statement->statements[0], mod, func, scope), 
+                        compileValueExpression(statement->statements[1], mod, func, scope), 
+                        "letmp"
+                    );
+                case '>':
+                    return Builder.CreateICmpSGE(
+                        compileValueExpression(statement->statements[0], mod, func, scope), 
+                        compileValueExpression(statement->statements[1], mod, func, scope), 
+                        "getmp"
+                    );
+                case '!':
+                    return Builder.CreateICmpNE(
+                        compileValueExpression(statement->statements[0], mod, func, scope), 
+                        compileValueExpression(statement->statements[1], mod, func, scope), 
+                        "netmp"
+                    );
+                case '=':
+                    return Builder.CreateICmpEQ(
+                        compileValueExpression(statement->statements[0], mod, func, scope), 
+                        compileValueExpression(statement->statements[1], mod, func, scope), 
+                        "eqtmp"
+                    );
+                    
+            }
+        }
+    }
+
     llvm::Value* compileTypeCast(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         llvm::Value* v = compileValueExpression(statement->statements[0], mod, func, scope);
         // ty<int> -> ty1<int>
@@ -169,6 +218,9 @@ namespace compiler {
         if (statement->type == parser::StatementType::MATH) {
             return compileMath(statement, mod, func, scope);
         }
+        if (statement->type == parser::StatementType::LOGIC_EXPRESSION) {
+            return compileLogicExpr(statement, mod, func, scope);
+        }
         if (statement->type == parser::StatementType::TYPE_CAST) {
             return compileTypeCast(statement, mod, func, scope);
         }
@@ -197,6 +249,8 @@ namespace compiler {
         if (statement->type == parser::StatementType::FUNCTION_CALL) {
             return compileFunctionCall(statement, mod, func, scope);
         }
+
+        return nullptr;
     }
 
     llvm::Type* compileType(const std::string& type) {

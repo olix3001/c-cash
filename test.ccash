@@ -1,4 +1,6 @@
+
 def int main() {
-    var char a = 'a';
-    return #int a;
+    var int temp = 1;
+    var bool test = temp < 2;
+    return #int test;
 }
