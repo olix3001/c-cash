@@ -16,6 +16,8 @@ namespace parser {
         INTEGER_LITERAL = 3,
         VARIABLE_DEFINITON = 4,
         VARIABLE_CALL = 5,
+        FUNCTION_CALL = 6,
+        MATH = 7,
     };
         
     struct Scope {

@@ -1,4 +1,7 @@
-def int main() {
-    var int a = 1;
+def int add(int a) {
     return a;
+}
+
+def int main() {
+    return add(1);
 }

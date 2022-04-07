@@ -5,6 +5,7 @@ namespace parser {
     int cTokenI = 0;
     tokenizer::Token* cToken = nullptr;
     std::vector<tokenizer::Token> Tokens;
+    std::map<char, int> operator_precedence = { {'<', 20}, {'>', 20}, {'+', 20}, {'-', 20}, {'*', 40}, {'/', 40} };
 
     tokenizer::Token* Parser::get_next() {
         if (cTokenI >= Tokens.size()) return nullptr;
@@ -101,7 +102,7 @@ namespace parser {
         if (!expect_operator("=").has_value()) { error(cToken, "Expected '=' in variable initialization"); }
 
         // expect default value
-        std::optional<Statement*> defVal = expect_value_expression();
+        std::optional<Statement*> defVal = expect_value_expression(false);
         if (!defVal.has_value()) { error(cToken, "Expected variable initial value"); }
 
         // expect semicolon to end the command
@@ -121,19 +122,35 @@ namespace parser {
 
         // expect function type
         std::optional<tokenizer::Token*> typeToken = expect_type();
-        if (!typeToken.has_value()) { --cTokenI; return std::nullopt; }
+        if (!typeToken.has_value()) { cTokenI-=2; get_next(); return std::nullopt; }
 
         // expect function name
         std::optional<tokenizer::Token*> nameToken = expect_identifier();
-        if (!nameToken.has_value()) { cTokenI-=2; return std::nullopt; }
+        if (!nameToken.has_value()) { cTokenI-=3; get_next(); return std::nullopt; }
 
         Statement* fd = new Statement(StatementType::FUNCTION_DEFINITION, nameToken.value()->value);
         fd->dataType = typeToken.value()->value;
 
         // arguments
+        bool isFirst = true;
         if (!expect_operator("(").has_value()) { error(cToken, "Expected '('"); }
-        // TODO: support arguments
-        if (!expect_operator(")").has_value()) { error(cToken, "Expected ')'"); }
+        while (!expect_operator(")").has_value()) {
+            if (!isFirst) {
+                if (!expect_operator(",").has_value()) { error(cToken, "Expected ',' to separate function arguments"); }
+            }
+            std::optional<tokenizer::Token*> vt = expect_type();
+            if (!vt.has_value()) { error(cToken, "Expected argument or ')'"); }
+
+            std::optional<tokenizer::Token*> vn = expect_identifier();
+            if (!vt.has_value()) { error(cToken, "Expected argument name"); }
+
+            std::pair<std::string, std::string> arg;
+            arg.first = vt.value()->value;
+            arg.second = vn.value()->value;
+
+            fd->args.emplace_back(arg);
+            isFirst = false;
+        }
 
         // function
         std::optional<Statement*> expr = expect_expression();
@@ -143,19 +160,86 @@ namespace parser {
         return fd;
     }
 
-    std::optional<Statement*> Parser::expect_value_expression() {
+    std::optional<Statement*> Parser::expect_function_call() {
+        std::optional<tokenizer::Token*> fName = expect_identifier();
+        if (!fName.has_value()) {return std::nullopt;}
+
+        Statement* fptr = new Statement(StatementType::FUNCTION_CALL, fName.value()->value);
+
+        if (!expect_operator("(").has_value()) { cTokenI-=2; get_next(); return std::nullopt; }
+        bool isFirst = true;
+        while(!expect_operator(")").has_value()) {
+            if (!isFirst) {
+                if (!expect_operator(",").has_value()) { error(cToken, "Expected ',' to separate function arguments"); }
+            }
+
+            std::optional<Statement*> argS = expect_value_expression(false);
+            if (argS.has_value()) {
+                fptr->statements.emplace_back(argS.value());
+            }
+            isFirst = false;
+        }
+
+        return fptr;
+    }
+
+    int get_precedence(tokenizer::Token* token) {
+        if (!isascii(token->value[0])) {
+            return -1;
+        }
+
+        int prec = operator_precedence[token->value[0]];
+        if (prec <= 0) {
+            return -1;
+        }
+        return prec;
+    }
+    std::optional<Statement*> Parser::expect_binary_expression() {
+        std::optional<Statement*> LHS = expect_value_expression(true);
+        if (!LHS.has_value()) { return std::nullopt; }
+        auto tmp = expect_binary_RHS(0, LHS.value());
+        return tmp;
+    }
+    std::optional<Statement*> Parser::expect_binary_RHS(int prec, Statement* LHS) {
+        std::optional<tokenizer::Token*> OP = expect_operator("");
+        cTokenI -= 3; get_next();
+
+        if (!OP.has_value() || std::find(std::begin(math_ops), std::end(math_ops), OP.value()->value) == std::end(math_ops)) { return std::nullopt; }
+
+        std::optional<Statement*> RHS = expect_value_expression(false);
+        if (!RHS.has_value()) { cToken->debug_print(); error(cToken, "Expected right side of binary operation"); }
+
+        Statement* ms = new Statement(StatementType::MATH, OP.value()->value);
+        ms->statements.emplace_back(LHS);
+        ms->statements.emplace_back(RHS.value());
+
+        return ms;
+    }
+
+    std::optional<Statement*> Parser::expect_value_expression(bool skipBin) {
+
+        std::optional<Statement*> cs;
+        // binary expression
+        if (!skipBin && (cs = expect_binary_expression()).has_value()) {
+            return cs.value();
+        }
+
         // primitives
         std::optional<tokenizer::Token*> ct;
-        std::optional<Statement*> cs;
-
         if ((ct = expect_integer()).has_value()) {
             return new Statement(StatementType::INTEGER_LITERAL, ct.value()->value);
         }
 
+        // function call
+        if ((cs = expect_function_call()).has_value()) { 
+            return cs.value();
+        }
+
         // variable
         if ((cs = expect_variable_call()).has_value()) {
-            return cs;
+            return cs.value();
         }
+
     }
 
     std::optional<Statement*> Parser::expect_expression() {
@@ -175,11 +259,12 @@ namespace parser {
 
         // return
         if (expect_identifier("return").has_value()) {
-            std::optional<Statement*> retVal = expect_value_expression();
-            if (!retVal.has_value()) { error(cToken, "Expected return value"); }
+            std::optional<Statement*> retVal = expect_value_expression(false);
+            if (!retVal.has_value()) { cToken->debug_print(); error(cToken, "Expected return value"); }
 
             Statement* retExpr = new Statement(StatementType::RETURN, "");
             retExpr->statements.emplace_back(retVal.value());
+
             if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
             return retExpr;
         }
@@ -189,7 +274,15 @@ namespace parser {
         // variable definition
         temp = expect_variable_definition();
         if (temp.has_value()) {
-            return temp;
+            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
+            return temp.value();
+        }
+
+        // function call
+        temp = expect_function_call();
+        if (temp.has_value()) {
+            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
+            return temp.value();
         }
     }
 

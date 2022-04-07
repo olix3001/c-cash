@@ -14,6 +14,7 @@
 namespace parser {
 
     const std::string data_types[] = {"void", "int", "float", "double", "long", "bool"};
+    const std::string math_ops[] = {"+", "-", "*", "/"};
 
     class Parser {
 
@@ -26,7 +27,11 @@ namespace parser {
             static std::optional<Statement*> expect_function();
             static std::optional<Statement*> expect_expression();
             static std::optional<Statement*> expect_variable_call();
-            static std::optional<Statement*> expect_value_expression();
+            static std::optional<Statement*> expect_value_expression(bool skipBin);
+            static std::optional<Statement*> expect_function_call();
+
+            static std::optional<Statement*> expect_binary_expression();
+            static std::optional<Statement*> expect_binary_RHS(int prec, Statement* LHS);
 
             static std::optional<Statement*> expect_variable_definition();
 
@@ -34,6 +39,8 @@ namespace parser {
             static std::optional<tokenizer::Token*> expect_operator(const std::string& name);
             static std::optional<tokenizer::Token*> expect_type(const std::string& name);
             static std::optional<tokenizer::Token*> expect_integer();
+
+            static int get_precedence(tokenizer::Token* token);
 
             static void error(tokenizer::Token* token, const std::string& message);
 
