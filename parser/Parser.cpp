@@ -45,7 +45,7 @@ namespace parser {
 
         std::regex pattern("[A-Za-z_]\\w*");
         std::smatch result;
-        if(!regex_match(cToken->value, result, pattern)) error(cToken, "You can only use letters, digits and _ in identifiers"); 
+        if(!regex_match(cToken->value, result, pattern)) { return std::nullopt; }
 
         tokenizer::Token* returnToken = cToken;
         get_next();
@@ -57,6 +57,38 @@ namespace parser {
 
         tokenizer::Token* returnToken = cToken;
         get_next();
+        return returnToken;
+    }
+    std::optional<tokenizer::Token*> Parser::expect_long_int() {
+        if(cToken->type != tokenizer::TokenType::INTEGER ) { return std::nullopt; }
+        tokenizer::Token* returnToken = cToken;
+        get_next();
+        cToken->debug_print();
+        if(cToken->type != tokenizer::TokenType::IDENTIFIER || cToken->value != "l") { cTokenI-=2; get_next(); return std::nullopt; }
+
+        get_next();
+        return returnToken;
+    }
+    std::optional<tokenizer::Token*> Parser::expect_char() {
+        if(cToken->type != tokenizer::TokenType::OPERATOR ) { return std::nullopt; }
+        get_next();
+
+        if(cToken->type != tokenizer::TokenType::IDENTIFIER || cToken->value.size() != 1) { cTokenI-=2; get_next(); return std::nullopt; }
+        tokenizer::Token* returnToken = cToken;
+        get_next();
+
+        if(cToken->type != tokenizer::TokenType::OPERATOR ) { cTokenI-=3; get_next(); return std::nullopt; }
+
+        get_next();
+        return returnToken;
+    }
+    std::optional<tokenizer::Token*> Parser::expect_boolean() {
+        if(cToken->type != tokenizer::TokenType::IDENTIFIER ) { return std::nullopt; }
+
+        if (cToken->value != "true" && cToken->value != "false") { return std::nullopt; }
+        tokenizer::Token* returnToken = cToken;
+        get_next();
+        // returnToken->value = (cToken->value != "true" ? "1" : "0");
         return returnToken;
     }
 
@@ -86,6 +118,22 @@ namespace parser {
         return new Statement(StatementType::VARIABLE_CALL, nameToken.value()->value);
     }
 
+    std::optional<Statement*> Parser::expect_type_cast() {
+        if (!expect_operator("#").has_value()) { return std::nullopt; }
+
+        // expect type to cast to
+        std::optional<tokenizer::Token*> typeToken = expect_type();
+        if (!typeToken.has_value()) { --cTokenI; get_next(); return std::nullopt; }
+
+        // expect value to cast
+        std::optional<Statement*> val = expect_value_expression(false);
+        if (!val.has_value()) { error(cToken, "Expected value for a type cast"); }
+
+        Statement* stmt = new Statement(StatementType::TYPE_CAST, typeToken.value()->value);
+        stmt->statements.emplace_back(val.value());
+
+        return stmt;
+    }
 
     std::optional<Statement*> Parser::expect_variable_definition() {
         if (!expect_identifier("var").has_value()) { return std::nullopt; }
@@ -104,9 +152,6 @@ namespace parser {
         // expect default value
         std::optional<Statement*> defVal = expect_value_expression(false);
         if (!defVal.has_value()) { error(cToken, "Expected variable initial value"); }
-
-        // expect semicolon to end the command
-        if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
 
         Statement* stmt = new Statement(StatementType::VARIABLE_DEFINITON, nameToken.value()->value);
         stmt->dataType = typeToken.value()->value;
@@ -214,7 +259,7 @@ namespace parser {
         if (!OP.has_value() || std::find(std::begin(math_ops), std::end(math_ops), OP.value()->value) == std::end(math_ops)) { return std::nullopt; }
 
         std::optional<Statement*> RHS = expect_value_expression(false);
-        if (!RHS.has_value()) { cToken->debug_print(); error(cToken, "Expected right side of binary operation"); }
+        if (!RHS.has_value()) { error(cToken, "Expected right side of binary operation"); }
 
         Statement* ms = new Statement(StatementType::MATH, OP.value()->value);
         ms->statements.emplace_back(LHS);
@@ -226,6 +271,11 @@ namespace parser {
     std::optional<Statement*> Parser::expect_value_expression(bool skipBin) {
 
         std::optional<Statement*> cs;
+        // type cast
+        if ((cs = expect_type_cast()).has_value()) { 
+            return cs.value();
+        }
+        
         // binary expression
         if (!skipBin && (cs = expect_binary_expression()).has_value()) {
             return cs.value();
@@ -233,8 +283,18 @@ namespace parser {
 
         // primitives
         std::optional<tokenizer::Token*> ct;
+        if ((ct = expect_long_int()).has_value()) {
+            return new Statement(StatementType::LONG_LITERAL, ct.value()->value);
+        }
+        if ((ct = expect_char()).has_value()) {
+            return new Statement(StatementType::CHAR_LITERAL, ct.value()->value);
+        }
         if ((ct = expect_integer()).has_value()) {
             return new Statement(StatementType::INTEGER_LITERAL, ct.value()->value);
+        }
+        if ((ct = expect_boolean()).has_value()) {
+            ct.value()->debug_print();
+            return new Statement(StatementType::BOOLEAN_LITERAL, ct.value()->value);
         }
 
         // function call
@@ -267,12 +327,12 @@ namespace parser {
         // return
         if (expect_identifier("return").has_value()) {
             std::optional<Statement*> retVal = expect_value_expression(false);
-            if (!retVal.has_value()) { cToken->debug_print(); error(cToken, "Expected return value"); }
+            if (!retVal.has_value()) { error(cToken, "Expected return value"); }
 
             Statement* retExpr = new Statement(StatementType::RETURN, "");
             retExpr->statements.emplace_back(retVal.value());
 
-            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
+            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';' (r)"); }
             return retExpr;
         }
 
@@ -281,14 +341,14 @@ namespace parser {
         // variable definition
         temp = expect_variable_definition();
         if (temp.has_value()) {
-            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
+            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';' (vd)"); }
             return temp.value();
         }
 
         // function call
         temp = expect_function_call();
         if (temp.has_value()) {
-            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';'"); }
+            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';' (fc)"); }
             return temp.value();
         }
     }

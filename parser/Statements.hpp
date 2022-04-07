@@ -18,6 +18,10 @@ namespace parser {
         VARIABLE_CALL = 5,
         FUNCTION_CALL = 6,
         MATH = 7,
+        BOOLEAN_LITERAL = 8,
+        TYPE_CAST = 9,
+        LONG_LITERAL = 10,
+        CHAR_LITERAL = 11,
     };
         
     struct Scope {

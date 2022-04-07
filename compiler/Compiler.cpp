@@ -2,6 +2,12 @@
 
 namespace compiler {
 
+    template<typename Base, typename T>
+    inline bool instanceof(const T *ptr) {
+    return dynamic_cast<const Base*>(ptr) != nullptr;
+    }
+
+
     llvm::LLVMContext llvmContext;
     llvm::IRBuilder<> Builder(llvmContext);
     
@@ -130,9 +136,29 @@ namespace compiler {
         }
     }
 
+    llvm::Value* compileTypeCast(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        llvm::Value* v = compileValueExpression(statement->statements[0], mod, func, scope);
+        // ty<int> -> ty1<int>
+        if ((statement->value == "int" || statement->value == "bool" || statement->value == "long" || statement->value == "char") && v->getType()->isIntegerTy()) {
+            return Builder.CreateIntCast(v, compileType(statement->value), true);
+        }
+
+        // bitcast for all other types
+        return Builder.CreateBitCast(compileValueExpression(statement->statements[0], mod, func, scope), compileType(statement->value), "casttmp");
+    }
+
     llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         if (statement->type == parser::StatementType::INTEGER_LITERAL) {
             return llvm::ConstantInt::get(llvmContext, llvm::APInt(32, std::stoi(statement->value)));
+        }
+        if (statement->type == parser::StatementType::LONG_LITERAL) {
+            return llvm::ConstantInt::get(llvmContext, llvm::APInt(64, std::stol(statement->value)));
+        }
+        if (statement->type == parser::StatementType::CHAR_LITERAL) {
+            return llvm::ConstantInt::get(llvmContext, llvm::APInt(8, statement->value[0]));
+        }
+        if (statement->type == parser::StatementType::BOOLEAN_LITERAL) {
+            return llvm::ConstantInt::get(llvmContext, llvm::APInt(1, (statement->value == "true" ? 1 : 0)));
         }
         if (statement->type == parser::StatementType::VARIABLE_CALL) {
             return compileVariableCall(statement, mod, func, scope);
@@ -142,6 +168,9 @@ namespace compiler {
         }
         if (statement->type == parser::StatementType::MATH) {
             return compileMath(statement, mod, func, scope);
+        }
+        if (statement->type == parser::StatementType::TYPE_CAST) {
+            return compileTypeCast(statement, mod, func, scope);
         }
     }
 
@@ -172,6 +201,9 @@ namespace compiler {
 
     llvm::Type* compileType(const std::string& type) {
         if (type == "int") return llvm::Type::getInt32Ty(llvmContext);
+        if (type == "long") return llvm::Type::getInt64Ty(llvmContext);
+        if (type == "char") return llvm::Type::getInt8Ty(llvmContext);
+        if (type == "bool") return llvm::Type::getInt1Ty(llvmContext);
         if (type == "void") return llvm::Type::getVoidTy(llvmContext);
     }
 

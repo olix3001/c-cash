@@ -7,7 +7,7 @@
 
 namespace tokenizer {
 
-    const char operator_list[] = {'(', ')', '{', '}', ';', ':', ',', '[', ']', '=', '+', '-', '/', '*'};
+    const char operator_list[] = {'(', ')', '{', '}', ';', ':', ',', '[', ']', '=', '+', '-', '/', '*', '#', '\''};
 
     // Different types of tokens
     enum TokenType {

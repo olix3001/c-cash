@@ -1,7 +1,4 @@
-def int add(int a, int b) {
-    return a+b;
-}
-
 def int main() {
-    return add(1, 1);
+    var char a = 'a';
+    return #int a;
 }

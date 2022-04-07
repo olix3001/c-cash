@@ -24,6 +24,12 @@ namespace tokenizer {
                 } else if (currentToken.type == TokenType::UNDEFINED) {
                     currentToken.type = TokenType::INTEGER;
                     currentToken.value.append(1, cChar);
+                } else {
+                    if (currentToken.type != TokenType::UNDEFINED) {
+                        tokens.emplace_back(currentToken);
+                        currentToken.type = TokenType::UNDEFINED;
+                        currentToken.value = "";
+                    }
                 }
 
 
@@ -50,8 +56,8 @@ namespace tokenizer {
                 } else {
                     if (currentToken.type != TokenType::UNDEFINED) {
                         tokens.emplace_back(currentToken);
-                        currentToken.type = TokenType::UNDEFINED;
-                        currentToken.value = "";
+                        currentToken.type = TokenType::IDENTIFIER;
+                        currentToken.value = cChar;
                     }
                 }
             }
