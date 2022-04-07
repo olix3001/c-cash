@@ -42,9 +42,11 @@ namespace compiler {
         llvm::BasicBlock* entryBlock = llvm::BasicBlock::Create(llvmContext, "entry", F);
 
         Builder.SetInsertPoint(entryBlock);
+
+        parser::Scope* funcScope = new parser::Scope();
         
         for (parser::Statement* s : statement->statements) {
-            compileExpression(s, mod, F);
+            compileExpression(s, mod, F, funcScope);
         }
 
         llvm::verifyFunction(*F);
@@ -55,40 +57,49 @@ namespace compiler {
         return tmpB.CreateAlloca(t, 0, name.c_str());
     }
 
-    llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod, llvm::Function* func) {
-        Builder.CreateRet(compileValueExpression(statement->statements[0], mod, func));
+    llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        Builder.CreateRet(compileValueExpression(statement->statements[0], mod, func, scope));
     }
 
-    llvm::StoreInst* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func) {
-        llvm::AllocaInst* alloca = allocateEntry(func, compileType(statement->dataType), statement->value);
-        llvm::Value* initialValue = compileValueExpression(statement->statements[0], mod, func);
+    llvm::Value* compileVariableCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        return Builder.CreateLoad(scope->namedValues[statement->value], statement->value);
+    }
 
+    llvm::StoreInst* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        llvm::AllocaInst* alloca = allocateEntry(func, compileType(statement->dataType), statement->value);
+        llvm::Value* initialValue = compileValueExpression(statement->statements[0], mod, func, scope);
+
+        scope->namedValues[statement->value] = alloca;
         return Builder.CreateStore(initialValue, alloca);
     }
 
-    llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func) {
+    llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         if (statement->type == parser::StatementType::INTEGER_LITERAL) {
             return llvm::ConstantInt::get(llvmContext, llvm::APInt(32, std::stoi(statement->value)));
         }
+
+        if (statement->type == parser::StatementType::VARIABLE_CALL) {
+            return compileVariableCall(statement, mod, func, scope);
+        }
     }
 
-    llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func) {
+    llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         // code block
         if (statement->type == parser::StatementType::CODE_BLOCK) {
             for (parser::Statement* s : statement->statements) {
-                compileExpression(s, mod, func);
+                compileExpression(s, mod, func, scope);
             }
         }
 
         // return
         if (statement->type == parser::StatementType::RETURN) {
-            compileReturn(statement, mod, func);
+            compileReturn(statement, mod, func, scope);
             return nullptr;
         }
 
         // variable definition
         if (statement->type == parser::StatementType::VARIABLE_DEFINITON) {
-            compileVariableDefinition(statement, mod, func);
+            compileVariableDefinition(statement, mod, func, scope);
             return nullptr;
         }
     }

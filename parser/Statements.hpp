@@ -3,6 +3,9 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
+
+#include "llvm/IR/Value.h"
 
 namespace parser {
 
@@ -12,8 +15,14 @@ namespace parser {
         RETURN = 2,
         INTEGER_LITERAL = 3,
         VARIABLE_DEFINITON = 4,
+        VARIABLE_CALL = 5,
     };
         
+    struct Scope {
+        Scope* parent;
+        std::map<std::string, llvm::Value*> namedValues;
+    };
+
     class Statement {
         public:
             StatementType type;
@@ -22,6 +31,7 @@ namespace parser {
 
             std::vector<std::pair<std::string, std::string>> args; // used only for functions
             std::string dataType; // used for some things only
+            Scope* scope;
 
             Statement( StatementType type, std::string value ) : type( type ), value( value ) {};
             virtual ~Statement() = default;

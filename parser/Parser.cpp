@@ -78,6 +78,13 @@ namespace parser {
         return returnToken;
     }
 
+    std::optional<Statement*> Parser::expect_variable_call() {
+        std::optional<tokenizer::Token*> nameToken = expect_identifier();
+        if (!nameToken.has_value()) return std::nullopt;
+
+        return new Statement(StatementType::VARIABLE_CALL, nameToken.value()->value);
+    }
+
 
     std::optional<Statement*> Parser::expect_variable_definition() {
         if (!expect_identifier("var").has_value()) { return std::nullopt; }
@@ -139,9 +146,15 @@ namespace parser {
     std::optional<Statement*> Parser::expect_value_expression() {
         // primitives
         std::optional<tokenizer::Token*> ct;
+        std::optional<Statement*> cs;
 
         if ((ct = expect_integer()).has_value()) {
             return new Statement(StatementType::INTEGER_LITERAL, ct.value()->value);
+        }
+
+        // variable
+        if ((cs = expect_variable_call()).has_value()) {
+            return cs;
         }
     }
 

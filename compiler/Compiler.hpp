@@ -20,10 +20,11 @@ namespace compiler {
     llvm::Module* compileModule(std::vector<parser::Statement*> module);
 
     llvm::Function* compileFunction(parser::Statement* statement, llvm::Module* mod);
-    llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func);
-    llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func);
-    llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod, llvm::Function* func);
-    llvm::StoreInst* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func);
+    llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
+    llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
+    llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
+    llvm::StoreInst* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
+    llvm::Value* compileVariableCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
 
     llvm::AllocaInst* allocateEntry(llvm::Function* func, llvm::Type* t, const std::string& name);
 
