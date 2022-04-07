@@ -195,14 +195,21 @@ namespace parser {
         return prec;
     }
     std::optional<Statement*> Parser::expect_binary_expression() {
+        int tokenIB = cTokenI;
         std::optional<Statement*> LHS = expect_value_expression(true);
         if (!LHS.has_value()) { return std::nullopt; }
+        // Statement* ms = new Statement(StatementType::INTEGER_LITERAL, "1");
+        // return ms;
         auto tmp = expect_binary_RHS(0, LHS.value());
+        if (!tmp.has_value()) {
+            cTokenI = tokenIB-1;
+            get_next();
+            return std::nullopt;
+        }
         return tmp;
     }
     std::optional<Statement*> Parser::expect_binary_RHS(int prec, Statement* LHS) {
         std::optional<tokenizer::Token*> OP = expect_operator("");
-        cTokenI -= 3; get_next();
 
         if (!OP.has_value() || std::find(std::begin(math_ops), std::end(math_ops), OP.value()->value) == std::end(math_ops)) { return std::nullopt; }
 
