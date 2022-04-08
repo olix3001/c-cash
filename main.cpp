@@ -3,6 +3,7 @@
 #include "parser/Statements.hpp"
 #include "compiler/Compiler.hpp"
 
+
 #include <string>
 #include <vector>
 #include <iostream>
@@ -35,6 +36,7 @@ int main(int argc, char **argv) {
         std::cout << s->value;//s->value << "\n";
     }
 
-    compiler::compileModule(AST);
+    llvm::Module* mm = compiler::compileModule(AST);
+
 
 }
