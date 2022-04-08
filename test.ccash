@@ -1,12 +1,10 @@
 
 def int main() {
-    var int v = 1;
+    var long v = 0l;
 
-    if (0 < v) {
-        if (1 <= v) {
-            v = 4;
-        }
+    for (var long i=0l; i<1000000000l; i = i + 1l) {
+        v = v+i;
     }
 
-    return v;
+    return #int v;
 }

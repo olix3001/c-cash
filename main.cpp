@@ -38,5 +38,5 @@ int main(int argc, char **argv) {
 
     llvm::Module* mm = compiler::compileModule(AST);
 
-
+    parser::Parser::saveCompilation(mm, "result");
 }

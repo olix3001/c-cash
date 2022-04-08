@@ -84,7 +84,8 @@ namespace compiler {
     }
 
     llvm::Value* compileVariableCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
-        return Builder.CreateLoad(scope->namedValues[statement->value], statement->value);
+        return Builder.CreateLoad(static_cast<llvm::AllocaInst*>(scope->namedValues[statement->value])->getAllocatedType(), 
+        scope->namedValues[statement->value], statement->value);
     }
 
     llvm::Value* compileFunctionCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
@@ -103,7 +104,8 @@ namespace compiler {
         llvm::Value* val = compileValueExpression(statement->statements[0], mod, func, scope);
         Builder.CreateStore(val, scope->namedValues[statement->value]);
 
-        return Builder.CreateLoad(scope->namedValues[statement->value], statement->value);
+        return Builder.CreateLoad(static_cast<llvm::AllocaInst*>(scope->namedValues[statement->value])->getAllocatedType(), 
+        scope->namedValues[statement->value], statement->value);
     }
 
     llvm::Value* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
@@ -113,7 +115,7 @@ namespace compiler {
         scope->namedValues[statement->value] = alloca;
         Builder.CreateStore(initialValue, alloca);
 
-        return Builder.CreateLoad(scope->namedValues[statement->value], statement->value);
+        return Builder.CreateLoad(alloca->getAllocatedType(), scope->namedValues[statement->value], statement->value);
     }
 
     llvm::Value* compileForStatement(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {

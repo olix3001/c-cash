@@ -11,7 +11,7 @@
 #include "Statements.hpp"
 #include "../tokenizer/Tokenizer.hpp"
 
-#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
@@ -19,7 +19,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/IR/LegacyPassManager.h"
-
+#include "llvm/ADT/Optional.h"
 namespace parser {
 
     const std::string data_types[] = {"void", "int", "float", "double", "long", "bool", "char"};
@@ -33,7 +33,7 @@ namespace parser {
             static tokenizer::Token* get_next();
             static bool is_next();
             static std::vector<Statement*> parse(std::vector<tokenizer::Token> tokens);
-            static void saveCompilation(llvm::Module* mod);
+            static void saveCompilation(llvm::Module* mod, const std::string& filename);
 
             static std::optional<Statement*> expect_function();
             static std::optional<Statement*> expect_expression(bool skip_semicolon = false);

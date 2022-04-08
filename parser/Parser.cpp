@@ -16,49 +16,49 @@ namespace parser {
         return cTokenI < Tokens.size()-1;
     }
 
-    void saveCompilation(llvm::Module* mod) {
+    void Parser::saveCompilation(llvm::Module* mod, const std::string& filename) {
         #ifdef __linux__ 
 
-        auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+        // auto TargetTriple = llvm::sys::getDefaultTargetTriple();
 
-        std::string Error;
-        auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
+        // std::string Error;
+        // auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
 
-        if (!Target) {
-            llvm::errs() << Error;
-            return;
-        }
+        // if (!Target) {
+        //     llvm::errs() << Error;
+        //     return;
+        // }
 
-        auto CPU = "generic";
-        auto Features = "";
+        // auto CPU = "generic";
+        // auto Features = "";
 
-        llvm::TargetOptions opt;
+        // llvm::TargetOptions opt;
 
-        auto RM = llvm::Optional<llvm::Reloc::Model>();
-        auto TargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+        // auto RM = llvm::Optional<llvm::Reloc::Model>();
+        // auto TargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
 
-        mod->setDataLayout(TargetMachine->createDataLayout());
-        mod->setTargetTriple(TargetTriple);
+        // mod->setDataLayout(TargetMachine->createDataLayout());
+        // mod->setTargetTriple(TargetTriple);
 
-        auto Filename = "result.o";
-        std::error_code EC;
-        llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::OF_None);
+        // auto Filename = "result.o";
+        // std::error_code EC;
+        // llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::OF_None);
 
-        if (EC) {
-            llvm::errs() << "Could not open file: " << EC.message();
-            return;
-        }
+        // if (EC) {
+        //     llvm::errs() << "Could not open file: " << EC.message();
+        //     return;
+        // }
 
-        llvm::legacy::PassManager pass;
-        auto FileType = llvm::CGFT_ObjectFile;
+        // llvm::legacy::PassManager pass;
+        // auto FileType = llvm::CGFT_ObjectFile;
 
-        if (TargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
-            llvm::errs() << "TargetMachine can't emit a file of this type";
-            return;
-        }
+        // if (TargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
+        //     llvm::errs() << "TargetMachine can't emit a file of this type";
+        //     return;
+        // }
 
-        pass.run(*mod);
-        dest.flush();
+        // pass.run(*mod);
+        // dest.flush();
 
         #else
         return;
