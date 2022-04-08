@@ -23,12 +23,13 @@ namespace compiler {
     llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
-    llvm::StoreInst* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
+    llvm::Value* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileVariableCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileVariableAssignment(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileFunctionCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileMath(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileIfStatement(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
+    llvm::Value* compileForStatement(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileTypeCast(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileLogicExpr(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
 

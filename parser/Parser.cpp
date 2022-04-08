@@ -63,7 +63,6 @@ namespace parser {
         if(cToken->type != tokenizer::TokenType::INTEGER ) { return std::nullopt; }
         tokenizer::Token* returnToken = cToken;
         get_next();
-        cToken->debug_print();
         if(cToken->type != tokenizer::TokenType::IDENTIFIER || cToken->value != "l") { cTokenI-=2; get_next(); return std::nullopt; }
 
         get_next();
@@ -246,6 +245,37 @@ namespace parser {
         return fptr;
     }
 
+    std::optional<Statement*> Parser::expect_for() {
+        // expect "if" keyword
+        if (!expect_identifier("for").has_value()) { return std::nullopt; }
+        Statement* FOR = new Statement(StatementType::FOR_LOOP, "");
+
+        // expect condition
+        if (!expect_operator("(").has_value()) { error(cToken, "Expected '('"); }
+
+        // before
+        std::optional<Statement*> beforeS = expect_value_expression(false, false);
+        if (!expect_operator(";").has_value()) { error(cToken, "Expected ';' (fl1)"); }
+
+        std::optional<Statement*> testS = expect_value_expression(false, false);
+        if (!expect_operator(";").has_value()) { error(cToken, "Expected ';' (fl2)"); }
+
+        std::optional<Statement*> afterS = expect_value_expression(false, false);
+
+        if (!expect_operator(")").has_value()) { error(cToken, "Expected ')'"); }
+
+        FOR->statements.emplace_back(beforeS.value());
+        FOR->statements.emplace_back(testS.value());
+        FOR->statements.emplace_back(afterS.value());
+
+        // expect function block
+        std::optional<Statement*> forBlock = expect_expression();
+        if (!forBlock.has_value()) { error(cToken, "expected for loop code block"); }
+        FOR->statements.emplace_back(forBlock.value());
+
+        return FOR;
+    }
+
     std::optional<Statement*> Parser::expect_if() {
         // expect "if" keyword
         if (!expect_identifier("if").has_value()) { return std::nullopt; }
@@ -260,7 +290,7 @@ namespace parser {
 
         // expect function block
         std::optional<Statement*> ifBlock = expect_expression();
-        if (!ifBlock.has_value()) { error(cToken, "expected if block code"); }
+        if (!ifBlock.has_value()) { error(cToken, "expected if code block"); }
         IF->statements.emplace_back(ifBlock.value());
 
         // check for else statement
@@ -269,7 +299,7 @@ namespace parser {
 
         // expect function block
         std::optional<Statement*> elseBlock = expect_expression();
-        if (!elseBlock.has_value()) { error(cToken, "expected else block code"); }
+        if (!elseBlock.has_value()) { error(cToken, "expected else code block"); }
         IF->statements.emplace_back(elseBlock.value());
 
 
@@ -351,6 +381,11 @@ namespace parser {
 
         std::optional<Statement*> cs;
 
+        // variable definition
+        if ((cs = expect_variable_definition()).has_value()) {
+            return cs.value();
+        }
+
         // type cast
         if ((cs = expect_type_cast()).has_value()) { 
             return cs.value();
@@ -361,6 +396,11 @@ namespace parser {
         }
 
         if (!skipLog && (cs = expect_logic_expression()).has_value()) {
+            return cs.value();
+        }
+
+        // variable assignment
+        if ((cs = expect_variable_assignment()).has_value()) {
             return cs.value();
         }
 
@@ -376,7 +416,6 @@ namespace parser {
             return new Statement(StatementType::INTEGER_LITERAL, ct.value()->value);
         }
         if ((ct = expect_boolean()).has_value()) {
-            ct.value()->debug_print();
             return new Statement(StatementType::BOOLEAN_LITERAL, ct.value()->value);
         }
 
@@ -392,7 +431,7 @@ namespace parser {
 
     }
 
-    std::optional<Statement*> Parser::expect_expression() {
+    std::optional<Statement*> Parser::expect_expression(bool skip_semicolon) {
         // block
         if (expect_operator("{").has_value()) {
             Statement* stmt = new Statement(StatementType::CODE_BLOCK, "");
@@ -415,6 +454,12 @@ namespace parser {
             return temp.value();
         }
 
+        // for loop block
+        temp = expect_for();
+        if (temp.has_value()) {
+            return temp.value();
+        }
+
         // return
         if (expect_identifier("return").has_value()) {
             std::optional<Statement*> retVal = expect_value_expression(false, false);
@@ -423,28 +468,28 @@ namespace parser {
             Statement* retExpr = new Statement(StatementType::RETURN, "");
             retExpr->statements.emplace_back(retVal.value());
 
-            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';' (r)"); }
+            if (!skip_semicolon && !expect_operator(";").has_value()) { error(cToken, "Expected ';' (r)"); }
             return retExpr;
         }
 
         // variable assignment
         temp = expect_variable_assignment();
         if (temp.has_value()) {
-            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';' (vd)"); }
+            if (!skip_semicolon && !expect_operator(";").has_value()) { error(cToken, "Expected ';' (vd)"); }
             return temp.value();
         }
 
         // variable definition
         temp = expect_variable_definition();
         if (temp.has_value()) {
-            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';' (vd)"); }
+            if (!skip_semicolon && !expect_operator(";").has_value()) { error(cToken, "Expected ';' (vd)"); }
             return temp.value();
         }
 
         // function call
         temp = expect_function_call();
         if (temp.has_value()) {
-            if (!expect_operator(";").has_value()) { error(cToken, "Expected ';' (fc)"); }
+            if (!skip_semicolon && !expect_operator(";").has_value()) { error(cToken, "Expected ';' (fc)"); }
             return temp.value();
         }
 

@@ -26,7 +26,7 @@ namespace parser {
             static std::vector<Statement*> parse(std::vector<tokenizer::Token> tokens);
 
             static std::optional<Statement*> expect_function();
-            static std::optional<Statement*> expect_expression();
+            static std::optional<Statement*> expect_expression(bool skip_semicolon = false);
             static std::optional<Statement*> expect_variable_call();
             static std::optional<Statement*> expect_value_expression(bool skipBin, bool skipLog);
             static std::optional<Statement*> expect_function_call();
@@ -41,6 +41,7 @@ namespace parser {
             static std::optional<Statement*> expect_variable_definition();
             static std::optional<Statement*> expect_variable_assignment();
             static std::optional<Statement*> expect_if();
+            static std::optional<Statement*> expect_for();
 
             static std::optional<tokenizer::Token*> expect_identifier(const std::string& name);
             static std::optional<tokenizer::Token*> expect_operator(const std::string& name);

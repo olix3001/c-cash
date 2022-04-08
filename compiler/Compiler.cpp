@@ -106,12 +106,45 @@ namespace compiler {
         return Builder.CreateLoad(scope->namedValues[statement->value], statement->value);
     }
 
-    llvm::StoreInst* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+    llvm::Value* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         llvm::AllocaInst* alloca = allocateEntry(func, compileType(statement->dataType), statement->value);
         llvm::Value* initialValue = compileValueExpression(statement->statements[0], mod, func, scope);
 
         scope->namedValues[statement->value] = alloca;
-        return Builder.CreateStore(initialValue, alloca);
+        Builder.CreateStore(initialValue, alloca);
+
+        return Builder.CreateLoad(scope->namedValues[statement->value], statement->value);
+    }
+
+    llvm::Value* compileForStatement(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+
+        parser::Scope* loopScope = new parser::Scope(scope);
+
+        // compile before loop
+        compileValueExpression(statement->statements[0], mod, func, loopScope);
+
+        // create loop block
+        llvm::BasicBlock* loopBB = llvm::BasicBlock::Create(llvmContext, "loop.body", func);
+        Builder.CreateBr(loopBB);
+
+        Builder.SetInsertPoint(loopBB);
+
+        // compile function body
+        compileExpression(statement->statements[3], mod, func, loopScope);
+
+        // compile after expression
+        llvm::Value* afterExpr = compileValueExpression(statement->statements[2], mod, func, loopScope);
+        // compile end expression
+        llvm::Value* endCond = compileValueExpression(statement->statements[1], mod, func, loopScope);
+
+        // after loop block
+        llvm::BasicBlock* afterLoopBB = llvm::BasicBlock::Create(llvmContext, "loop.after", func);
+
+        Builder.CreateCondBr(endCond, loopBB, afterLoopBB);
+
+        Builder.SetInsertPoint(afterLoopBB);
+
+        return nullptr;
     }
 
     llvm::Value* compileIfStatement(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
@@ -119,14 +152,14 @@ namespace compiler {
         llvm::Value* cond = compileValueExpression(statement->statements[0], mod, func, scope);
 
         // create then block
-        llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(llvmContext, "then", func);
+        llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(llvmContext, "if.then", func);
 
         // create else block if exists
         bool hasElse = statement->type == parser::StatementType::IFELSE;
-        llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(llvmContext, "else", func);;
+        llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(llvmContext, "if.else", func);;
 
         // create block to continue code flow
-        llvm::BasicBlock *contBB = llvm::BasicBlock::Create(llvmContext, "ifcont", func);
+        llvm::BasicBlock *contBB = llvm::BasicBlock::Create(llvmContext, "if.cont", func);
 
         Builder.CreateCondBr(cond, thenBB, elseBB);
 
@@ -152,7 +185,7 @@ namespace compiler {
 
         std::vector<llvm::Type*> types;
         std::vector<llvm::Value*> args;
-        Builder.CreateIntrinsic(llvm::Intrinsic::donothing, types, args);
+        // Builder.CreateIntrinsic(llvm::Intrinsic::donothing, types, args);
 
 
         return nullptr;
@@ -275,6 +308,16 @@ namespace compiler {
         if (statement->type == parser::StatementType::TYPE_CAST) {
             return compileTypeCast(statement, mod, func, scope);
         }
+
+        // variable definition
+        if (statement->type == parser::StatementType::VARIABLE_DEFINITON) {
+            return compileVariableDefinition(statement, mod, func, scope);
+        }
+
+        if (statement->type == parser::StatementType::VARIABLE_ASSIGNMENT) {
+            return compileVariableAssignment(statement, mod, func, scope);
+        }
+
     }
 
     llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
@@ -309,6 +352,10 @@ namespace compiler {
 
         if (statement->type == parser::StatementType::VARIABLE_ASSIGNMENT) {
             return compileVariableAssignment(statement, mod, func, scope);
+        }
+
+        if (statement->type == parser::StatementType::FOR_LOOP) {
+            return compileForStatement(statement, mod, func, scope);
         }
 
         return nullptr;
