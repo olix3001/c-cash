@@ -23,11 +23,19 @@ namespace parser {
         LONG_LITERAL = 10,
         CHAR_LITERAL = 11,
         LOGIC_EXPRESSION = 12,
+        IF = 13,
+        IFELSE = 14,
+        VARIABLE_ASSIGNMENT = 15,
     };
         
     struct Scope {
         Scope* parent;
         std::map<std::string, llvm::Value*> namedValues;
+
+        Scope() {}
+        Scope(Scope* parent) : parent(parent) {
+            namedValues.insert(parent->namedValues.begin(), parent->namedValues.end());
+        };
     };
 
     class Statement {

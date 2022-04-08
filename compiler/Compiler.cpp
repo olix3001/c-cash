@@ -99,12 +99,63 @@ namespace compiler {
         return Builder.CreateCall(F, args, "calltmp");
     }
 
+    llvm::Value* compileVariableAssignment(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        llvm::Value* val = compileValueExpression(statement->statements[0], mod, func, scope);
+        Builder.CreateStore(val, scope->namedValues[statement->value]);
+
+        return Builder.CreateLoad(scope->namedValues[statement->value], statement->value);
+    }
+
     llvm::StoreInst* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         llvm::AllocaInst* alloca = allocateEntry(func, compileType(statement->dataType), statement->value);
         llvm::Value* initialValue = compileValueExpression(statement->statements[0], mod, func, scope);
 
         scope->namedValues[statement->value] = alloca;
         return Builder.CreateStore(initialValue, alloca);
+    }
+
+    llvm::Value* compileIfStatement(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        // get condition value
+        llvm::Value* cond = compileValueExpression(statement->statements[0], mod, func, scope);
+
+        // create then block
+        llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(llvmContext, "then", func);
+
+        // create else block if exists
+        bool hasElse = statement->type == parser::StatementType::IFELSE;
+        llvm::BasicBlock* elseBB = llvm::BasicBlock::Create(llvmContext, "else", func);;
+
+        // create block to continue code flow
+        llvm::BasicBlock *contBB = llvm::BasicBlock::Create(llvmContext, "ifcont", func);
+
+        Builder.CreateCondBr(cond, thenBB, elseBB);
+
+        // compile true code
+        Builder.SetInsertPoint(thenBB);
+        parser::Scope* trueScope = new parser::Scope(scope);
+        compileExpression(statement->statements[1], mod, func, trueScope);
+        Builder.CreateBr(contBB);
+
+        thenBB = Builder.GetInsertBlock();
+
+        // compile false code if exists
+        Builder.SetInsertPoint(elseBB);
+        if (hasElse) {
+            parser::Scope* falseScope = new parser::Scope(scope);
+            compileExpression(statement->statements[2], mod, func, falseScope);
+        }
+        Builder.CreateBr(contBB);
+
+        elseBB = Builder.GetInsertBlock();
+
+        Builder.SetInsertPoint(contBB);
+
+        std::vector<llvm::Type*> types;
+        std::vector<llvm::Value*> args;
+        Builder.CreateIntrinsic(llvm::Intrinsic::donothing, types, args);
+
+
+        return nullptr;
     }
 
     llvm::Value* compileMath(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
@@ -240,6 +291,12 @@ namespace compiler {
             return nullptr;
         }
 
+        // if statement
+        if (statement->type == parser::StatementType::IF || statement->type == parser::StatementType::IFELSE) {
+            compileIfStatement(statement, mod, func, scope);
+            return nullptr;
+        }
+
         // variable definition
         if (statement->type == parser::StatementType::VARIABLE_DEFINITON) {
             compileVariableDefinition(statement, mod, func, scope);
@@ -248,6 +305,10 @@ namespace compiler {
 
         if (statement->type == parser::StatementType::FUNCTION_CALL) {
             return compileFunctionCall(statement, mod, func, scope);
+        }
+
+        if (statement->type == parser::StatementType::VARIABLE_ASSIGNMENT) {
+            return compileVariableAssignment(statement, mod, func, scope);
         }
 
         return nullptr;

@@ -1,6 +1,10 @@
 
 def int main() {
-    var int temp = 1;
-    var bool test = temp < 2;
-    return #int test;
+    var int v = 1;
+
+    if (1 < 2) {
+        v = 2;
+    }
+
+    return v;
 }

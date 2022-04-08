@@ -39,6 +39,8 @@ namespace parser {
             static std::optional<Statement*> expect_binary_RHS(int prec, Statement* LHS);
 
             static std::optional<Statement*> expect_variable_definition();
+            static std::optional<Statement*> expect_variable_assignment();
+            static std::optional<Statement*> expect_if();
 
             static std::optional<tokenizer::Token*> expect_identifier(const std::string& name);
             static std::optional<tokenizer::Token*> expect_operator(const std::string& name);
