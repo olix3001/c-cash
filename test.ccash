@@ -1,10 +1,5 @@
+import ../module.ccash;
 
 def int main() {
-    var long v = 0l;
-
-    for (var long i=0l; i<1000000000l; i = i + 1l) {
-        v = v+i;
-    }
-
-    return #int v;
+    return a();
 }

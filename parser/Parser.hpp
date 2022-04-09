@@ -36,6 +36,7 @@ namespace parser {
             static void saveCompilation(llvm::Module* mod, const std::string& filename);
 
             static std::optional<Statement*> expect_function();
+            static std::optional<Statement*> expect_import();
             static std::optional<Statement*> expect_expression(bool skip_semicolon = false);
             static std::optional<Statement*> expect_variable_call();
             static std::optional<Statement*> expect_value_expression(bool skipBin, bool skipLog);

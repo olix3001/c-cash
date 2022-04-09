@@ -33,10 +33,10 @@ int main(int argc, char **argv) {
 
     for (auto s : AST) {
         s->debug_print(0);
-        std::cout << s->value;//s->value << "\n";
     }
 
-    llvm::Module* mm = compiler::compileModule(AST);
+    llvm::Module* mm = compiler::compileModule(AST, compiler::base_name(args[1]));
 
-    parser::Parser::saveCompilation(mm, "result");
+    parser::Parser::saveCompilation(mm, compiler::base_name(args[1]) + ".o");
+
 }

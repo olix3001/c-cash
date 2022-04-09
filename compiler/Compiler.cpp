@@ -11,16 +11,19 @@ namespace compiler {
     llvm::LLVMContext llvmContext;
     llvm::IRBuilder<> Builder(llvmContext);
     
-    llvm::Module* compileModule(std::vector<parser::Statement*> module) {
+    llvm::Module* compileModule(std::vector<parser::Statement*> module, const std::string& name) {
         // create module
-        llvm::Module* mod = new llvm::Module("test", llvmContext);
+        llvm::Module* mod = new llvm::Module(name, llvmContext);
 
         for (parser::Statement* s : module) {
-            if (s->type == parser::StatementType::FUNCTION_DEFINITION)
+            if (s->type == parser::StatementType::FUNCTION_DEFINITION) {
                 compileFunction(s, mod);
+            } else if (s->type == parser::StatementType::IMPORT) {
+                compileImport(s, mod);
+            }
         }
         
-
+        std::cout << "\u001B[36m" << mod->getSourceFileName() << " \u001B[32mmodule llvm ir code:\u001B[0m\n";
         mod->print(llvm::errs(), nullptr);
 
         // llvm::FunctionPassManager* pm = new llvm::FunctionPassManager(mod);
@@ -31,6 +34,41 @@ namespace compiler {
         // pm->doInitialization();
 
         return mod;
+    }
+
+    std::string base_name(std::string const & path)
+    {
+        return path.substr(path.find_last_of("/\\") + 1);
+    }
+
+    llvm::Module* compileImport(parser::Statement* statement, llvm::Module* mod) {
+        // get code
+        std::ifstream file;
+        file.open(statement->value);
+
+        std::string line, allCode="";
+        while (std::getline(file, line)) {
+            allCode += line + '\n';
+        }
+
+
+        std::cout << "\u001B[32mCompiling module \u001B[36m" << statement->value << "\u001B[0m\n";
+
+        // tokenize and parse
+        std::vector<tokenizer::Token> tokens = tokenizer::tokenize(allCode);
+        std::vector<parser::Statement*> AST = parser::Parser::parse(tokens);
+
+        // compile
+        llvm::Module* im = compileModule(AST, base_name(statement->value));
+
+        // declare functions in this module
+        for (llvm::Function& m : im->getFunctionList()) {
+            llvm::Function::Create(m.getFunctionType(), llvm::Function::ExternalLinkage, m.getName(), mod);
+        }
+
+        std::string objName = base_name(statement->value) + ".o";
+
+        parser::Parser::saveCompilation(im, objName);
     }
 
     llvm::Function* compileFunction(parser::Statement* statement, llvm::Module* mod) {
@@ -80,6 +118,9 @@ namespace compiler {
     }
 
     llvm::ReturnInst* compileReturn(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        if (statement->value == "void") {
+            return Builder.CreateRet(nullptr);
+        }
         return Builder.CreateRet(compileValueExpression(statement->statements[0], mod, func, scope));
     }
 

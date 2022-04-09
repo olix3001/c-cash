@@ -2,8 +2,10 @@
 
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 #include "../parser/Parser.hpp"
+#include "../tokenizer/Tokenizer.hpp"
 #include "../parser/Statements.hpp"
 
 // llvm imports
@@ -17,8 +19,11 @@
 
 namespace compiler {
 
-    llvm::Module* compileModule(std::vector<parser::Statement*> module);
+    llvm::Module* compileModule(std::vector<parser::Statement*> module, const std::string& name);
 
+    std::string base_name(std::string const & path);
+
+    llvm::Module* compileImport(parser::Statement* statement, llvm::Module* mod);
     llvm::Function* compileFunction(parser::Statement* statement, llvm::Module* mod);
     llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);

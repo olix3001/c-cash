@@ -19,46 +19,50 @@ namespace parser {
     void Parser::saveCompilation(llvm::Module* mod, const std::string& filename) {
         #ifdef __linux__ 
 
-        // auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+        auto TargetTriple = llvm::sys::getDefaultTargetTriple();
 
-        // std::string Error;
-        // auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
+        llvm::InitializeAllTargetInfos();
+        llvm::InitializeAllTargets();
+        llvm::InitializeAllTargetMCs();
+        llvm::InitializeAllAsmParsers();
+        llvm::InitializeAllAsmPrinters();
 
-        // if (!Target) {
-        //     llvm::errs() << Error;
-        //     return;
-        // }
+        std::string Error;
+        auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
 
-        // auto CPU = "generic";
-        // auto Features = "";
+        if (!Target) {
+            llvm::errs() << Error;
+            return;
+        }
 
-        // llvm::TargetOptions opt;
+        auto CPU = "generic";
+        auto Features = "";
 
-        // auto RM = llvm::Optional<llvm::Reloc::Model>();
-        // auto TargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+        llvm::TargetOptions opt;
+        auto RM = llvm::Optional<llvm::Reloc::Model>();
+        auto TargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
 
-        // mod->setDataLayout(TargetMachine->createDataLayout());
-        // mod->setTargetTriple(TargetTriple);
+        mod->setDataLayout(TargetMachine->createDataLayout());
+        mod->setTargetTriple(TargetTriple);
 
-        // auto Filename = "result.o";
-        // std::error_code EC;
-        // llvm::raw_fd_ostream dest(Filename, EC, llvm::sys::fs::OF_None);
+        std::error_code EC;
+        llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
 
-        // if (EC) {
-        //     llvm::errs() << "Could not open file: " << EC.message();
-        //     return;
-        // }
+        if (EC) {
+            llvm::errs() << "Could not open file: " << EC.message();
+            return;
+        }
 
-        // llvm::legacy::PassManager pass;
-        // auto FileType = llvm::CGFT_ObjectFile;
+        llvm::legacy::PassManager pass;
+        auto FileType = llvm::CGFT_ObjectFile;
 
-        // if (TargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
-        //     llvm::errs() << "TargetMachine can't emit a file of this type";
-        //     return;
-        // }
+        if (TargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
+            llvm::errs() << "TargetMachine can't emit a file of this type";
+            return;
+        }
 
-        // pass.run(*mod);
-        // dest.flush();
+        pass.run(*mod);
+        dest.flush();
 
         #else
         return;
@@ -67,6 +71,10 @@ namespace parser {
     }
 
     std::vector<Statement*> Parser::parse(std::vector<tokenizer::Token> tokens) {
+        int cTokenITMP = cTokenI;
+        tokenizer::Token* cTokenTMP = cToken;
+        auto tokensTMP = Tokens;
+
         cTokenI = 0;
         Tokens = tokens;
         std::vector<Statement*> result;
@@ -77,15 +85,22 @@ namespace parser {
         while(is_next()) {
 
             // parse function declaration
-            std::optional<Statement*> fDefinition = expect_function();
-            if (fDefinition.has_value()) {
-                result.emplace_back(fDefinition.value());
+            std::optional<Statement*> definition = expect_function();
+            if (definition.has_value()) {
+                result.emplace_back(definition.value());
+            } else if ((definition = expect_import()).has_value()) {
+                result.emplace_back(definition.value());
             } else {
                 error(cToken, "Expected global definition like function, variable or class");
             }
         }
 
         std::cout << result.size() << '\n';
+
+        cTokenI = cTokenITMP;
+        cToken = cTokenTMP;
+        Tokens = tokensTMP;
+
         return result;
     }
 
@@ -227,6 +242,18 @@ namespace parser {
         return stmt;
     }
 
+    std::optional<Statement*> Parser::expect_import() {
+         // expect "import" keyword
+        if (!expect_identifier("import").has_value()) { return std::nullopt; }
+
+        std::string name = "";
+        while (!expect_operator(";").has_value()) { 
+            name += cToken->value;
+            get_next();
+        }
+
+        return new Statement(StatementType::IMPORT, name);
+    }
 
     std::optional<Statement*> Parser::expect_function() {
         // expect "def" keyword
@@ -268,6 +295,7 @@ namespace parser {
         std::optional<Statement*> expr = expect_expression();
         if (!expr.has_value()) { error(cToken, "Expected function body"); }
         fd->statements.emplace_back(expr.value());
+
 
         return fd;
     }
@@ -431,6 +459,7 @@ namespace parser {
 
         std::optional<Statement*> cs;
 
+
         // variable definition
         if ((cs = expect_variable_definition()).has_value()) {
             return cs.value();
@@ -479,6 +508,8 @@ namespace parser {
             return cs.value();
         }
 
+        return std::nullopt;
+
     }
 
     std::optional<Statement*> Parser::expect_expression(bool skip_semicolon) {
@@ -513,9 +544,17 @@ namespace parser {
         // return
         if (expect_identifier("return").has_value()) {
             std::optional<Statement*> retVal = expect_value_expression(false, false);
-            if (!retVal.has_value()) { error(cToken, "Expected return value"); }
+            if (!retVal.has_value()) { 
+                if (expect_operator(";").has_value()) {
+                    // return without return value
+                    Statement* retExpr = new Statement(StatementType::RETURN, "void");
+                    return retExpr;
+                } else {
+                    error(cToken, "Expected return value");
+                }
+            }
 
-            Statement* retExpr = new Statement(StatementType::RETURN, "");
+            Statement* retExpr = new Statement(StatementType::RETURN, "value");
             retExpr->statements.emplace_back(retVal.value());
 
             if (!skip_semicolon && !expect_operator(";").has_value()) { error(cToken, "Expected ';' (r)"); }
@@ -536,6 +575,7 @@ namespace parser {
             return temp.value();
         }
 
+
         // function call
         temp = expect_function_call();
         if (temp.has_value()) {
@@ -543,7 +583,7 @@ namespace parser {
             return temp.value();
         }
 
-        
+        return std::nullopt;
     }
 
 
