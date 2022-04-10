@@ -29,6 +29,7 @@ namespace parser {
         FOR_LOOP = 16,
         IMPORT = 17,
         STRING = 18,
+        GET_ALLOCA = 19,
     };
         
     struct Scope {

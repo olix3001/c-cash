@@ -43,11 +43,13 @@ namespace parser {
             static std::optional<Statement*> expect_function_call();
             static std::optional<Statement*> expect_type_cast();
 
+            static std::optional<Statement*> expect_get_alloca();
+
             static std::optional<Statement*> expect_logic_expression();
             static std::optional<Statement*> expect_logic_RHS(Statement* LHS);
 
             static std::optional<Statement*> expect_binary_expression();
-            static std::optional<Statement*> expect_binary_RHS(int prec, Statement* LHS);
+            static std::optional<Statement*> expect_binary_RHS(int prec, Statement* LHS, int tokenIB);
 
             static std::optional<Statement*> expect_variable_definition();
             static std::optional<Statement*> expect_variable_assignment();

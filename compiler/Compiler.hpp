@@ -38,8 +38,12 @@ namespace compiler {
     llvm::Value* compileForStatement(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileTypeCast(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileLogicExpr(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
+    llvm::Value* compileGetAlloca(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
 
     llvm::AllocaInst* allocateEntry(llvm::Function* func, llvm::Type* t, const std::string& name);
+
+    llvm::Function* compileIntrinsic(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
+    llvm::Function* createFDeclaration(llvm::Module* mod, const std::string& name, llvm::Type* rt, std::vector<llvm::Type*> at, bool varargs);
 
     llvm::Type* compileType(const std::string& type);
 

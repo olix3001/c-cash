@@ -48,7 +48,19 @@ namespace tokenizer {
                 currentToken.value = "";
 
             } else { // identifier
-                if (currentToken.type == TokenType::UNDEFINED) {
+                if (tokens.size() > 1 && tokens[tokens.size() - 1].value == "\\") {
+                    Token* t = &tokens[tokens.size() - 1];
+                    t->type = TokenType::IDENTIFIER;
+                    if (cChar == 'n') {
+                        t->value = "\n";
+                    } else if (cChar == 't') {
+                        t->value = "\t";
+                    }
+
+                    currentToken.type = TokenType::UNDEFINED;
+                    currentToken.value = "";
+                    
+                } else if (currentToken.type == TokenType::UNDEFINED) {
                     currentToken.type = TokenType::IDENTIFIER;
                     currentToken.value.append(1, cChar);
                 } else if (currentToken.type == TokenType::IDENTIFIER) {

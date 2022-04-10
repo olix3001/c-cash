@@ -124,13 +124,41 @@ namespace compiler {
         return Builder.CreateRet(compileValueExpression(statement->statements[0], mod, func, scope));
     }
 
+    llvm::Value* compileGetAlloca(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        return scope->namedValues[statement->value];
+    }
+
     llvm::Value* compileVariableCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         return Builder.CreateLoad(static_cast<llvm::AllocaInst*>(scope->namedValues[statement->value])->getAllocatedType(), 
         scope->namedValues[statement->value], statement->value);
     }
 
+    llvm::Function* createFDeclaration(llvm::Module* mod, const std::string& name, llvm::Type* rt, std::vector<llvm::Type*> at, bool varargs) {
+        llvm::FunctionType* ft = llvm::FunctionType::get(rt, at, varargs);
+        return llvm::Function::Create(ft, llvm::Function::ExternalLinkage, name, mod);
+    }
+
+    llvm::Function* compileIntrinsic(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        // printf intrinsic
+        if (statement->value == "printf") {
+            std::vector<llvm::Type*> at { llvm::PointerType::get(llvm::Type::getInt8Ty(llvmContext), 0) };
+            return createFDeclaration(mod, "printf", llvm::IntegerType::getInt32Ty(llvmContext), at, true);
+        }
+        // scanf intrinsic
+        if (statement->value == "scanf") {
+            std::vector<llvm::Type*> at { llvm::PointerType::get(llvm::Type::getInt8Ty(llvmContext), 0) };
+            return createFDeclaration(mod, "scanf", llvm::IntegerType::getInt32Ty(llvmContext), at, true);
+        }
+
+        return nullptr;
+    }
+
     llvm::Value* compileFunctionCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
-        llvm::Function* F = mod->getFunction(statement->value);
+        llvm::Function* F;
+
+        compileIntrinsic(statement, mod, func, scope);
+
+        F = mod->getFunction(statement->value);
         if (!F) return nullptr;
 
         std::vector<llvm::Value*> args;
@@ -358,6 +386,9 @@ namespace compiler {
         if (statement->type == parser::StatementType::STRING) {
             return compileString(statement, mod, func, scope);
         }
+        if (statement->type == parser::StatementType::GET_ALLOCA) {
+            return compileGetAlloca(statement, mod, func, scope);
+        }
 
         // variable definition
         if (statement->type == parser::StatementType::VARIABLE_DEFINITON) {
@@ -421,22 +452,20 @@ namespace compiler {
             tn = tn.substr(0, tn.size()-1);
         }
 
-        // pointer type
-        if (isPointer) {
-            if (tn == "int") return llvm::Type::getInt32PtrTy(llvmContext);
-            if (tn == "long") return llvm::Type::getInt64PtrTy(llvmContext);
-            if (tn == "char") return llvm::Type::getInt8PtrTy(llvmContext);
-            if (tn == "bool") return llvm::Type::getInt1PtrTy(llvmContext);
-            
-            throw std::runtime_error("there is not pointer type for type " + tn);
-        }
+        llvm::Type* rt;
 
         // type
-        if (tn == "int") return llvm::Type::getInt32Ty(llvmContext);
-        if (tn == "long") return llvm::Type::getInt64Ty(llvmContext);
-        if (tn == "char") return llvm::Type::getInt8Ty(llvmContext);
-        if (tn == "bool") return llvm::Type::getInt1Ty(llvmContext);
-        if (tn == "void") return llvm::Type::getVoidTy(llvmContext);
+        if (tn == "int") rt = llvm::Type::getInt32Ty(llvmContext);
+        if (tn == "long") rt = llvm::Type::getInt64Ty(llvmContext);
+        if (tn == "char") rt = llvm::Type::getInt8Ty(llvmContext);
+        if (tn == "bool") rt = llvm::Type::getInt1Ty(llvmContext);
+        if (tn == "void") rt = llvm::Type::getVoidTy(llvmContext);
+
+        if (isPointer) {
+            return llvm::PointerType::get(rt, 0);
+        }
+
+        return rt;
 
     }
 

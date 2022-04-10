@@ -228,7 +228,7 @@ namespace parser {
 
         // expect value
         std::optional<Statement*> defVal = expect_value_expression(false, false);
-        if (!defVal.has_value()) { error(cToken, "Expected variable value"); }
+        if (!defVal.has_value()) { error(cToken, "Expected variable value (a)"); }
 
         Statement* stmt = new Statement(StatementType::VARIABLE_ASSIGNMENT, nameToken.value()->value);
         stmt->statements.emplace_back(defVal.value());
@@ -319,6 +319,16 @@ namespace parser {
         return fd;
     }
 
+    std::optional<Statement*> Parser::expect_get_alloca()  {
+        if (!expect_operator("&").has_value()) { return std::nullopt; }
+        std::optional<tokenizer::Token*> nameToken = expect_identifier();
+        if (!nameToken.has_value()) return std::nullopt;
+
+        Statement* stmt = new Statement(StatementType::GET_ALLOCA, nameToken.value()->value);
+
+        return stmt;
+    }
+
     std::optional<Statement*> Parser::expect_function_call() {
         std::optional<tokenizer::Token*> fName = expect_identifier();
         if (!fName.has_value()) {return std::nullopt;}
@@ -404,9 +414,11 @@ namespace parser {
     }
 
     std::optional<Statement*> Parser::expect_logic_expression() {
+        std::cout << "L "; cToken->debug_print();
         int tokenIB = cTokenI;
         std::optional<Statement*> LHS = expect_value_expression(false, true);
         if (!LHS.has_value()) { return std::nullopt; }
+        std::cout << "LA "; cToken->debug_print();
 
         auto tmp = expect_logic_RHS(LHS.value());
         if (!tmp.has_value()) {
@@ -446,23 +458,21 @@ namespace parser {
         return prec;
     }
     std::optional<Statement*> Parser::expect_binary_expression() {
+        return std::nullopt;
         int tokenIB = cTokenI;
         std::optional<Statement*> LHS = expect_value_expression(true, true);
         if (!LHS.has_value()) { return std::nullopt; }
         // Statement* ms = new Statement(StatementType::INTEGER_LITERAL, "1");
         // return ms;
-        auto tmp = expect_binary_RHS(0, LHS.value());
-        if (!tmp.has_value()) {
-            cTokenI = tokenIB-1;
-            get_next();
-            return std::nullopt;
+        auto tmp = expect_binary_RHS(0, LHS.value(), tokenIB);
+        if (!tmp.has_value()) { 
         }
         return tmp;
     }
-    std::optional<Statement*> Parser::expect_binary_RHS(int prec, Statement* LHS) {
+    std::optional<Statement*> Parser::expect_binary_RHS(int prec, Statement* LHS, int tokenIB) {
         std::optional<tokenizer::Token*> OP = expect_operator("");
 
-        if (!OP.has_value() || std::find(std::begin(math_ops), std::end(math_ops), OP.value()->value) == std::end(math_ops)) { return std::nullopt; }
+        if (!OP.has_value() || std::find(std::begin(math_ops), std::end(math_ops), OP.value()->value) == std::end(math_ops)) { cTokenI = tokenIB-1; get_next(); return std::nullopt; }
 
         std::optional<Statement*> RHS = expect_value_expression(false, false);
         if (!RHS.has_value()) { error(cToken, "Expected right side of binary operation"); }
@@ -478,9 +488,13 @@ namespace parser {
 
         std::optional<Statement*> cs;
 
-
         // variable definition
         if ((cs = expect_variable_definition()).has_value()) {
+            return cs.value();
+        }
+
+        // get alloca
+        if ((cs = expect_get_alloca()).has_value()) { 
             return cs.value();
         }
 
@@ -488,17 +502,23 @@ namespace parser {
         if ((cs = expect_type_cast()).has_value()) { 
             return cs.value();
         }
+
         // binary expression
         if (!skipBin && (cs = expect_binary_expression()).has_value()) {
             return cs.value();
         }
-
+        
         if (!skipLog && (cs = expect_logic_expression()).has_value()) {
             return cs.value();
         }
 
         // variable assignment
-        if ((cs = expect_variable_assignment()).has_value()) {
+        if (!skipLog && (cs = expect_variable_assignment()).has_value()) {
+            return cs.value();
+        }
+
+        // variable
+        if ((cs = expect_variable_call()).has_value()) {
             return cs.value();
         }
 
@@ -524,11 +544,6 @@ namespace parser {
 
         // function call
         if ((cs = expect_function_call()).has_value()) { 
-            return cs.value();
-        }
-
-        // variable
-        if ((cs = expect_variable_call()).has_value()) {
             return cs.value();
         }
 
