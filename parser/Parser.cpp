@@ -133,6 +133,20 @@ namespace parser {
         get_next();
         return returnToken;
     }
+
+    std::optional<Statement*> Parser::expect_string() {
+        if (!expect_operator("\"").has_value()) { return std::nullopt; }
+        Statement* stmt = new Statement(StatementType::STRING, "");
+        while (!expect_operator("\"").has_value()) {
+            stmt->value += cToken->value + " ";
+            get_next();
+        }
+        if (stmt->value[stmt->value.size() - 1] == ' ') {
+            stmt->value = stmt->value.substr(0, stmt->value.size()-1);
+        }
+        return stmt;
+    }
+
     std::optional<tokenizer::Token*> Parser::expect_char() {
         if(cToken->type != tokenizer::TokenType::OPERATOR ) { return std::nullopt; }
         get_next();
@@ -172,6 +186,11 @@ namespace parser {
 
         tokenizer::Token* returnToken = cToken;
         get_next();
+
+        if(expect_operator("*").has_value()) {
+            returnToken->value = returnToken->value + '*';
+        }
+
         return returnToken;
     }
 
@@ -480,6 +499,11 @@ namespace parser {
 
         // variable assignment
         if ((cs = expect_variable_assignment()).has_value()) {
+            return cs.value();
+        }
+
+        // string
+        if ((cs = expect_string()).has_value()) {
             return cs.value();
         }
 

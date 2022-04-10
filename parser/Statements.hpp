@@ -28,6 +28,7 @@ namespace parser {
         VARIABLE_ASSIGNMENT = 15,
         FOR_LOOP = 16,
         IMPORT = 17,
+        STRING = 18,
     };
         
     struct Scope {

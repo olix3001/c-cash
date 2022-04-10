@@ -323,6 +323,10 @@ namespace compiler {
         return Builder.CreateBitCast(compileValueExpression(statement->statements[0], mod, func, scope), compileType(statement->value), "casttmp");
     }
 
+    llvm::Value* compileString(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        return Builder.CreateGlobalStringPtr(llvm::StringRef(statement->value));
+    }
+
     llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         if (statement->type == parser::StatementType::INTEGER_LITERAL) {
             return llvm::ConstantInt::get(llvmContext, llvm::APInt(32, std::stoi(statement->value)));
@@ -351,6 +355,9 @@ namespace compiler {
         if (statement->type == parser::StatementType::TYPE_CAST) {
             return compileTypeCast(statement, mod, func, scope);
         }
+        if (statement->type == parser::StatementType::STRING) {
+            return compileString(statement, mod, func, scope);
+        }
 
         // variable definition
         if (statement->type == parser::StatementType::VARIABLE_DEFINITON) {
@@ -362,6 +369,7 @@ namespace compiler {
         }
 
     }
+
 
     llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         // code block
@@ -405,11 +413,31 @@ namespace compiler {
     }
 
     llvm::Type* compileType(const std::string& type) {
-        if (type == "int") return llvm::Type::getInt32Ty(llvmContext);
-        if (type == "long") return llvm::Type::getInt64Ty(llvmContext);
-        if (type == "char") return llvm::Type::getInt8Ty(llvmContext);
-        if (type == "bool") return llvm::Type::getInt1Ty(llvmContext);
-        if (type == "void") return llvm::Type::getVoidTy(llvmContext);
+        std::string tn = type;
+        bool isPointer = false;
+        // pointer type
+        if (type[type.size()-1] == '*') {
+            isPointer = true;
+            tn = tn.substr(0, tn.size()-1);
+        }
+
+        // pointer type
+        if (isPointer) {
+            if (tn == "int") return llvm::Type::getInt32PtrTy(llvmContext);
+            if (tn == "long") return llvm::Type::getInt64PtrTy(llvmContext);
+            if (tn == "char") return llvm::Type::getInt8PtrTy(llvmContext);
+            if (tn == "bool") return llvm::Type::getInt1PtrTy(llvmContext);
+            
+            throw std::runtime_error("there is not pointer type for type " + tn);
+        }
+
+        // type
+        if (tn == "int") return llvm::Type::getInt32Ty(llvmContext);
+        if (tn == "long") return llvm::Type::getInt64Ty(llvmContext);
+        if (tn == "char") return llvm::Type::getInt8Ty(llvmContext);
+        if (tn == "bool") return llvm::Type::getInt1Ty(llvmContext);
+        if (tn == "void") return llvm::Type::getVoidTy(llvmContext);
+
     }
 
 }

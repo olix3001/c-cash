@@ -1,5 +1,4 @@
-import ../module.ccash;
-
 def int main() {
-    return a();
+    var char* str = "Hello world";
+    return 0;
 }

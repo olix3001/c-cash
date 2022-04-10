@@ -60,6 +60,7 @@ namespace parser {
             static std::optional<tokenizer::Token*> expect_integer();
             static std::optional<tokenizer::Token*> expect_long_int();
             static std::optional<tokenizer::Token*> expect_char();
+            static std::optional<Statement*> expect_string();
             static std::optional<tokenizer::Token*> expect_boolean();
 
             static int get_precedence(tokenizer::Token* token);
