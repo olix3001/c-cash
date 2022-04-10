@@ -19,7 +19,11 @@ namespace tokenizer {
                     if (cChar == '\n') { currentToken.charNo = 0; currentToken.lineNo++; }
 
             } else if (isdigit(cChar)) { // number
-                if (currentToken.type == TokenType::INTEGER || currentToken.type == TokenType::DOUBLE) {
+                if (tokens.size() > 1 && tokens[tokens.size() - 1].value == ".") {
+                    Token* t = &tokens[tokens.size() - 1];
+                    t->type = TokenType::DOUBLE;
+                    t->value.append(1, cChar);
+                } else if (currentToken.type == TokenType::INTEGER || currentToken.type == TokenType::DOUBLE) {
                     currentToken.value.append(1, cChar);
                 } else if (currentToken.type == TokenType::UNDEFINED) {
                     currentToken.type = TokenType::INTEGER;
@@ -32,9 +36,13 @@ namespace tokenizer {
                     }
                 }
 
-
             } else if (std::find(std::begin(operator_list), std::end(operator_list), cChar) != std::end(operator_list)) { // operator
-                if (currentToken.type != TokenType::UNDEFINED) {
+
+                if (cChar == '.' && currentToken.type == TokenType::INTEGER) {
+                    currentToken.type = TokenType::DOUBLE;
+                    currentToken.value.append(1, cChar);
+                    continue;
+                } else if (currentToken.type != TokenType::UNDEFINED) {
                     tokens.emplace_back(currentToken);
                     currentToken.type = TokenType::UNDEFINED;
                     currentToken.value = "";

@@ -263,79 +263,160 @@ namespace compiler {
     }
 
     llvm::Value* compileMath(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
-        switch (statement->value[0]) {
-            case '+':
-                return Builder.CreateAdd(
-                    compileValueExpression(statement->statements[0], mod, func, scope), 
-                    compileValueExpression(statement->statements[1], mod, func, scope),
-                    "addtmp"
-                );
-            case '-':
-                return Builder.CreateSub(
-                    compileValueExpression(statement->statements[0], mod, func, scope), 
-                    compileValueExpression(statement->statements[1], mod, func, scope),
-                    "subtmp"
-                );
-            case '*':
-                return Builder.CreateMul(
-                    compileValueExpression(statement->statements[0], mod, func, scope), 
-                    compileValueExpression(statement->statements[1], mod, func, scope),
-                    "multmp"
-                );
-            case '/':
-                return Builder.CreateSDiv(
-                    compileValueExpression(statement->statements[0], mod, func, scope), 
-                    compileValueExpression(statement->statements[1], mod, func, scope),
-                    "divtmp"
-                );
-            default:
-                std::cout << "NO OPERATOR\n";
+        llvm::Value* av = compileValueExpression(statement->statements[0], mod, func, scope);
+        if (av->getType()->isIntegerTy()) { // integer
+            switch (statement->value[0]) {
+                case '+':
+                    return Builder.CreateAdd(
+                        av, 
+                        compileValueExpression(statement->statements[1], mod, func, scope),
+                        "addtmp"
+                    );
+                case '-':
+                    return Builder.CreateSub(
+                        av, 
+                        compileValueExpression(statement->statements[1], mod, func, scope),
+                        "subtmp"
+                    );
+                case '*':
+                    return Builder.CreateMul(
+                        av, 
+                        compileValueExpression(statement->statements[1], mod, func, scope),
+                        "multmp"
+                    );
+                case '/':
+                    return Builder.CreateSDiv(
+                        av, 
+                        compileValueExpression(statement->statements[1], mod, func, scope),
+                        "divtmp"
+                    );
+                default:
+                    std::cout << "NO OPERATOR\n";
+            }
+        } else { // floating point
+            switch (statement->value[0]) {
+                case '+':
+                    return Builder.CreateFAdd(
+                        av, 
+                        compileValueExpression(statement->statements[1], mod, func, scope),
+                        "faddtmp"
+                    );
+                case '-':
+                    return Builder.CreateFSub(
+                        av, 
+                        compileValueExpression(statement->statements[1], mod, func, scope),
+                        "fsubtmp"
+                    );
+                case '*':
+                    return Builder.CreateFMul(
+                        av, 
+                        compileValueExpression(statement->statements[1], mod, func, scope),
+                        "fmultmp"
+                    );
+                case '/':
+                    return Builder.CreateFDiv(
+                        av, 
+                        compileValueExpression(statement->statements[1], mod, func, scope),
+                        "fdivtmp"
+                    );
+                default:
+                    std::cout << "NO OPERATOR\n";
+            }
         }
     }
 
     llvm::Value* compileLogicExpr(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
-        if (statement->value.size() == 1) {
-            switch (statement->value[0]) {
-                case '<':
-                    return Builder.CreateICmpSLT(
-                        compileValueExpression(statement->statements[0], mod, func, scope), 
-                        compileValueExpression(statement->statements[1], mod, func, scope), 
-                        "lttmp"
-                    );
-                case '>':
-                    return Builder.CreateICmpSGT(
-                        compileValueExpression(statement->statements[0], mod, func, scope), 
-                        compileValueExpression(statement->statements[1], mod, func, scope), 
-                        "gttmp"
-                    );
+        llvm::Value* av = compileValueExpression(statement->statements[0], mod, func, scope);
+
+        if (av->getType()->isIntegerTy()) { // integer
+            if (statement->value.size() == 1) {
+                switch (statement->value[0]) {
+                    case '<':
+                        return Builder.CreateICmpSLT(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "lttmp"
+                        );
+                    case '>':
+                        return Builder.CreateICmpSGT(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "gttmp"
+                        );
+                }
+            } else {
+                switch(statement->value[0]) {
+                    case '<':
+                        return Builder.CreateICmpSLE(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "letmp"
+                        );
+                    case '>':
+                        return Builder.CreateICmpSGE(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "getmp"
+                        );
+                    case '!':
+                        return Builder.CreateICmpNE(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "netmp"
+                        );
+                    case '=':
+                        return Builder.CreateICmpEQ(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "eqtmp"
+                        );
+                        
+                }
             }
-        } else {
-            switch(statement->value[0]) {
-                case '<':
-                    return Builder.CreateICmpSLE(
-                        compileValueExpression(statement->statements[0], mod, func, scope), 
-                        compileValueExpression(statement->statements[1], mod, func, scope), 
-                        "letmp"
-                    );
-                case '>':
-                    return Builder.CreateICmpSGE(
-                        compileValueExpression(statement->statements[0], mod, func, scope), 
-                        compileValueExpression(statement->statements[1], mod, func, scope), 
-                        "getmp"
-                    );
-                case '!':
-                    return Builder.CreateICmpNE(
-                        compileValueExpression(statement->statements[0], mod, func, scope), 
-                        compileValueExpression(statement->statements[1], mod, func, scope), 
-                        "netmp"
-                    );
-                case '=':
-                    return Builder.CreateICmpEQ(
-                        compileValueExpression(statement->statements[0], mod, func, scope), 
-                        compileValueExpression(statement->statements[1], mod, func, scope), 
-                        "eqtmp"
-                    );
-                    
+        } else { // double
+            if (statement->value.size() == 1) {
+                switch (statement->value[0]) {
+                    case '<':
+                        return Builder.CreateFCmpOLT(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "flttmp"
+                        );
+                    case '>':
+                        return Builder.CreateFCmpOGT(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "fgttmp"
+                        );
+                }
+            } else {
+                switch(statement->value[0]) {
+                    case '<':
+                        return Builder.CreateFCmpOLE(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "fletmp"
+                        );
+                    case '>':
+                        return Builder.CreateFCmpOGE(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "fgetmp"
+                        );
+                    case '!':
+                        return Builder.CreateFCmpONE(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "fnetmp"
+                        );
+                    case '=':
+                        return Builder.CreateFCmpOEQ(
+                            av, 
+                            compileValueExpression(statement->statements[1], mod, func, scope), 
+                            "feqtmp"
+                        );
+                        
+                }
             }
         }
     }
@@ -347,12 +428,22 @@ namespace compiler {
             return Builder.CreateIntCast(v, compileType(statement->value), true);
         }
 
+        // ty<double> -> ty1<int>
+        if (statement->value == "int" && v->getType()->isDoubleTy()) {
+            return Builder.CreateFPToSI(v, compileType(statement->value));
+        }
+
+        // ty<int> -> ty1<double>
+        if (statement->value == "double" && v->getType()->isIntegerTy()) {
+            return Builder.CreateSIToFP(v, compileType(statement->value));
+        }
+
         // bitcast for all other types
         return Builder.CreateBitCast(compileValueExpression(statement->statements[0], mod, func, scope), compileType(statement->value), "casttmp");
     }
 
     llvm::Value* compileString(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
-        return Builder.CreateGlobalStringPtr(llvm::StringRef(statement->value));
+        return Builder.CreateGlobalStringPtr(llvm::StringRef(statement->value), "__const.str");
     }
 
     llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
@@ -367,6 +458,9 @@ namespace compiler {
         }
         if (statement->type == parser::StatementType::BOOLEAN_LITERAL) {
             return llvm::ConstantInt::get(llvmContext, llvm::APInt(1, (statement->value == "true" ? 1 : 0)));
+        }
+        if (statement->type == parser::StatementType::DOUBLE_LITERAL) {
+            return llvm::ConstantFP::get(llvmContext, llvm::APFloat(std::stod(statement->value)));
         }
         if (statement->type == parser::StatementType::VARIABLE_CALL) {
             return compileVariableCall(statement, mod, func, scope);
@@ -456,10 +550,11 @@ namespace compiler {
 
         // type
         if (tn == "int") rt = llvm::Type::getInt32Ty(llvmContext);
-        if (tn == "long") rt = llvm::Type::getInt64Ty(llvmContext);
-        if (tn == "char") rt = llvm::Type::getInt8Ty(llvmContext);
-        if (tn == "bool") rt = llvm::Type::getInt1Ty(llvmContext);
-        if (tn == "void") rt = llvm::Type::getVoidTy(llvmContext);
+        else if (tn == "long") rt = llvm::Type::getInt64Ty(llvmContext);
+        else if (tn == "char") rt = llvm::Type::getInt8Ty(llvmContext);
+        else if (tn == "bool") rt = llvm::Type::getInt1Ty(llvmContext);
+        else if (tn == "double") rt = llvm::Type::getDoubleTy(llvmContext);
+        else if (tn == "void") rt = llvm::Type::getVoidTy(llvmContext);
 
         if (isPointer) {
             return llvm::PointerType::get(rt, 0);

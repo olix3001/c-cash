@@ -117,6 +117,14 @@ namespace parser {
         return returnToken;
     }
 
+    std::optional<tokenizer::Token*> Parser::expect_double() {
+        if(cToken->type != tokenizer::TokenType::DOUBLE ) { return std::nullopt; }
+
+        tokenizer::Token* returnToken = cToken;
+        get_next();
+        return returnToken;
+    }
+
     std::optional<tokenizer::Token*> Parser::expect_integer() {
         if(cToken->type != tokenizer::TokenType::INTEGER ) { return std::nullopt; }
 
@@ -414,11 +422,9 @@ namespace parser {
     }
 
     std::optional<Statement*> Parser::expect_logic_expression() {
-        std::cout << "L "; cToken->debug_print();
         int tokenIB = cTokenI;
         std::optional<Statement*> LHS = expect_value_expression(false, true);
         if (!LHS.has_value()) { return std::nullopt; }
-        std::cout << "LA "; cToken->debug_print();
 
         auto tmp = expect_logic_RHS(LHS.value());
         if (!tmp.has_value()) {
@@ -458,7 +464,6 @@ namespace parser {
         return prec;
     }
     std::optional<Statement*> Parser::expect_binary_expression() {
-        return std::nullopt;
         int tokenIB = cTokenI;
         std::optional<Statement*> LHS = expect_value_expression(true, true);
         if (!LHS.has_value()) { return std::nullopt; }
@@ -485,28 +490,34 @@ namespace parser {
     }
 
     std::optional<Statement*> Parser::expect_value_expression(bool skipBin, bool skipLog) {
+        std::cout << "EXPR "; cToken->debug_print();
 
         std::optional<Statement*> cs;
 
         // variable definition
+        std::cout << "A\n";
         if ((cs = expect_variable_definition()).has_value()) {
             return cs.value();
         }
 
+        std::cout << "B\n";
         // get alloca
         if ((cs = expect_get_alloca()).has_value()) { 
             return cs.value();
         }
 
+        std::cout << "C\n";
         // type cast
         if ((cs = expect_type_cast()).has_value()) { 
             return cs.value();
         }
 
+        std::cout << "D\n";
         // binary expression
         if (!skipBin && (cs = expect_binary_expression()).has_value()) {
             return cs.value();
         }
+        std::cout << "E\n";
         
         if (!skipLog && (cs = expect_logic_expression()).has_value()) {
             return cs.value();
@@ -534,6 +545,9 @@ namespace parser {
         }
         if ((ct = expect_char()).has_value()) {
             return new Statement(StatementType::CHAR_LITERAL, ct.value()->value);
+        }
+        if ((ct = expect_double()).has_value()) {
+            return new Statement(StatementType::DOUBLE_LITERAL, ct.value()->value);
         }
         if ((ct = expect_integer()).has_value()) {
             return new Statement(StatementType::INTEGER_LITERAL, ct.value()->value);
@@ -603,7 +617,7 @@ namespace parser {
         // variable assignment
         temp = expect_variable_assignment();
         if (temp.has_value()) {
-            if (!skip_semicolon && !expect_operator(";").has_value()) { error(cToken, "Expected ';' (vd)"); }
+            if (!skip_semicolon && !expect_operator(";").has_value()) { error(cToken, "Expected ';' (va)"); }
             return temp.value();
         }
 

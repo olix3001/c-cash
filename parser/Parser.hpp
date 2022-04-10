@@ -60,6 +60,7 @@ namespace parser {
             static std::optional<tokenizer::Token*> expect_operator(const std::string& name);
             static std::optional<tokenizer::Token*> expect_type(const std::string& name);
             static std::optional<tokenizer::Token*> expect_integer();
+            static std::optional<tokenizer::Token*> expect_double();
             static std::optional<tokenizer::Token*> expect_long_int();
             static std::optional<tokenizer::Token*> expect_char();
             static std::optional<Statement*> expect_string();

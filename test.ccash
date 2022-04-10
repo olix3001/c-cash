@@ -1,15 +1,9 @@
 def int main() {
-    var int a = 0;
-    printf("Enter number: ");
-    scanf("%d", &a);
-    
-    if (a == 10) {
-        printf("This is 10\n");
-    } else if (a < 10) {
-        printf("This is less than 10\n");
-    } else {
-        printf("This is more than 10\n");
-    }
+    var double a = 0.5;
+
+    a = a + 0.2;
+
+    printf("%f", a);
 
     return 0;
 }

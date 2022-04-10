@@ -30,6 +30,7 @@ namespace parser {
         IMPORT = 17,
         STRING = 18,
         GET_ALLOCA = 19,
+        DOUBLE_LITERAL = 20,
     };
         
     struct Scope {
