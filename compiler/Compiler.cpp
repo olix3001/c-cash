@@ -446,6 +446,37 @@ namespace compiler {
         return Builder.CreateBitCast(compileValueExpression(statement->statements[0], mod, func, scope), compileType(statement->value), "casttmp");
     }
 
+    llvm::Value* compileArrayDef(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        // ! -------
+        // !  W.I.P.
+        // ! -------
+        // TODO: Fix type checking (not all values are always constant)
+        // TODO: Allow empty arrays (and figure out hot to get their type)
+
+        llvm::ArrayType* at;
+        llvm::Constant* ca;
+        if (statement->statements.size() > 0) {
+            at = llvm::ArrayType::get(compileValueExpression(statement->statements[0], mod, func, scope)->getType(), statement->statements.size());
+        }
+
+        if (statement->statements.size() > 0) {
+            std::vector<llvm::Constant*> vals;
+            for (auto s : statement->statements) {
+                llvm::Value* tv = compileValueExpression(s, mod, func, scope);
+                if (tv->getType()->isIntegerTy()) {
+                    vals.emplace_back((llvm::ConstantInt*) tv);
+                } else if (tv->getType()->isDoubleTy()) { 
+                    vals.emplace_back((llvm::ConstantFP*) tv);
+                }
+            }
+
+            ca = llvm::ConstantArray::get(at, *(new llvm::ArrayRef(vals)));
+            return new llvm::GlobalVariable(*mod, at, true, llvm::GlobalValue::LinkageTypes::ExternalLinkage, ca, "__const.arr");
+        }
+        
+        return ca;
+    }
+
     llvm::Value* compileString(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         return Builder.CreateGlobalStringPtr(llvm::StringRef(statement->value), "__const.str");
     }
@@ -486,6 +517,9 @@ namespace compiler {
         }
         if (statement->type == parser::StatementType::GET_ALLOCA) {
             return compileGetAlloca(statement, mod, func, scope);
+        }
+        if (statement->type == parser::StatementType::ARRAY_DEFINITION) {
+            return compileArrayDef(statement, mod, func, scope);
         }
 
         // variable definition

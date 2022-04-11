@@ -142,6 +142,25 @@ namespace parser {
         return returnToken;
     }
 
+    std::optional<Statement*> Parser::expect_array() {
+        if (!expect_operator("[").has_value()) { return std::nullopt; }
+        Statement* stmt = new Statement(StatementType::ARRAY_DEFINITION, "");
+
+        bool isFirst = true;
+        while (!expect_operator("]").has_value()) {
+            if (!isFirst) {
+                if (!expect_operator(",").has_value()) { error(cToken, "Expected ',' to separate array arguments"); }
+            }
+            isFirst = false;
+
+            std::optional<Statement*> v = expect_value_expression(false, false);
+            if (!v.has_value()) { error(cToken, "Expected value in array definition"); }
+            stmt->statements.emplace_back(v.value());
+        }
+
+        return stmt;
+    }
+
     std::optional<Statement*> Parser::expect_string() {
         if (!expect_operator("\"").has_value()) { return std::nullopt; }
         Statement* stmt = new Statement(StatementType::STRING, "");
@@ -531,6 +550,11 @@ namespace parser {
 
         // variable
         if ((cs = expect_variable_call()).has_value()) {
+            return cs.value();
+        }
+
+        // array
+        if ((cs = expect_array()).has_value()) {
             return cs.value();
         }
 
