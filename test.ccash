@@ -1,9 +1,4 @@
 def int main() {
-    var double a = 0.5;
-
-    a = a + 0.2;
-
-    printf("%f", a);
-
+    var int[10] a;
     return 0;
 }

@@ -179,9 +179,13 @@ namespace compiler {
 
     llvm::Value* compileVariableDefinition(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         llvm::AllocaInst* alloca = allocateEntry(func, compileType(statement->dataType), statement->value);
-        llvm::Value* initialValue = compileValueExpression(statement->statements[0], mod, func, scope);
 
         scope->namedValues[statement->value] = alloca;
+        if (statement->statements.size() <= 0) {
+            return Builder.CreateLoad(alloca->getAllocatedType(), scope->namedValues[statement->value], statement->value);
+        }
+
+        llvm::Value* initialValue = compileValueExpression(statement->statements[0], mod, func, scope);
         Builder.CreateStore(initialValue, alloca);
 
         return Builder.CreateLoad(alloca->getAllocatedType(), scope->namedValues[statement->value], statement->value);
@@ -540,8 +544,21 @@ namespace compiler {
     llvm::Type* compileType(const std::string& type) {
         std::string tn = type;
         bool isPointer = false;
+        bool isArray = false;
+        int arrlen = -1;
+
+        // array type
+        if (tn[tn.size()-1] == ']') {
+            isArray = true;
+            auto bit = std::find(std::begin(tn), std::end(tn), '[');
+            if (bit == std::end(tn)) throw std::runtime_error("something is not yes");
+            int b = bit - tn.begin();
+            arrlen = std::atoi(tn.substr(b+1, tn.size()-1).c_str());
+            tn = tn.substr(0, b);
+        }
+
         // pointer type
-        if (type[type.size()-1] == '*') {
+        if (tn[tn.size()-1] == '*') {
             isPointer = true;
             tn = tn.substr(0, tn.size()-1);
         }
@@ -557,7 +574,10 @@ namespace compiler {
         else if (tn == "void") rt = llvm::Type::getVoidTy(llvmContext);
 
         if (isPointer) {
-            return llvm::PointerType::get(rt, 0);
+            rt = llvm::PointerType::get(rt, 0);
+        }
+        if (isArray) {
+            rt = llvm::ArrayType::get(rt, arrlen);
         }
 
         return rt;

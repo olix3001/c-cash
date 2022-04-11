@@ -195,8 +195,14 @@ namespace parser {
         tokenizer::Token* returnToken = cToken;
         get_next();
 
-        if(expect_operator("*").has_value()) {
+        if(expect_operator("*").has_value()) { // pointer type
             returnToken->value = returnToken->value + '*';
+        }
+
+        if(expect_operator("[").has_value()) { // array type
+            std::optional<tokenizer::Token*> num = expect_integer();
+            if (!expect_operator("]").has_value()) { error(cToken, "Expected ']'"); }
+            returnToken->value = returnToken->value + '[' + num.value()->value + ']';
         }
 
         return returnToken;
@@ -255,15 +261,16 @@ namespace parser {
         std::optional<tokenizer::Token*> nameToken = expect_identifier();
         if (!nameToken.has_value()) { cTokenI-=2; return std::nullopt; }
 
+        Statement* stmt = new Statement(StatementType::VARIABLE_DEFINITON, nameToken.value()->value);
+        stmt->dataType = typeToken.value()->value;
+
         // expect initialization
-        if (!expect_operator("=").has_value()) { error(cToken, "Expected '=' in variable initialization"); }
+        if (!expect_operator("=").has_value()) { return stmt; }
 
         // expect default value
         std::optional<Statement*> defVal = expect_value_expression(false, false);
         if (!defVal.has_value()) { error(cToken, "Expected variable initial value"); }
 
-        Statement* stmt = new Statement(StatementType::VARIABLE_DEFINITON, nameToken.value()->value);
-        stmt->dataType = typeToken.value()->value;
         stmt->statements.emplace_back(defVal.value());
         
         return stmt;
@@ -490,35 +497,29 @@ namespace parser {
     }
 
     std::optional<Statement*> Parser::expect_value_expression(bool skipBin, bool skipLog) {
-        std::cout << "EXPR "; cToken->debug_print();
 
         std::optional<Statement*> cs;
 
         // variable definition
-        std::cout << "A\n";
         if ((cs = expect_variable_definition()).has_value()) {
             return cs.value();
         }
 
-        std::cout << "B\n";
         // get alloca
         if ((cs = expect_get_alloca()).has_value()) { 
             return cs.value();
         }
 
-        std::cout << "C\n";
         // type cast
         if ((cs = expect_type_cast()).has_value()) { 
             return cs.value();
         }
 
-        std::cout << "D\n";
         // binary expression
         if (!skipBin && (cs = expect_binary_expression()).has_value()) {
             return cs.value();
         }
-        std::cout << "E\n";
-        
+
         if (!skipLog && (cs = expect_logic_expression()).has_value()) {
             return cs.value();
         }
