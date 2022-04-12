@@ -446,12 +446,22 @@ namespace compiler {
         return Builder.CreateBitCast(compileValueExpression(statement->statements[0], mod, func, scope), compileType(statement->value), "casttmp");
     }
 
+    llvm::Value* compileArrayCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
+        llvm::AllocaInst* alloca = static_cast<llvm::AllocaInst*>(scope->namedValues[statement->statements[0]->value]);
+        std::vector<llvm::Value*> indx;
+                indx.emplace_back(llvm::ConstantInt::get(llvmContext, llvm::APInt(32, 0, true)));
+        indx.emplace_back(compileValueExpression(statement->statements[1], mod, func, scope));
+        llvm::Value* tmp = Builder.CreateInBoundsGEP(alloca->getAllocatedType(), alloca, indx, "geptmp");
+        return Builder.CreateLoad(tmp->getType(), tmp, "actmp");
+    }
+
     llvm::Value* compileArrayDef(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope) {
         // ! -------
         // !  W.I.P.
         // ! -------
         // TODO: Fix type checking (not all values are always constant)
         // TODO: Allow empty arrays (and figure out hot to get their type)
+        // TODO: Add memory copy to instantiate this array instead of returning global pointer
 
         llvm::ArrayType* at;
         llvm::Constant* ca;
@@ -520,6 +530,9 @@ namespace compiler {
         }
         if (statement->type == parser::StatementType::ARRAY_DEFINITION) {
             return compileArrayDef(statement, mod, func, scope);
+        }
+        if (statement->type == parser::StatementType::ARRAY_CALL) {
+            return compileArrayCall(statement, mod, func, scope);
         }
 
         // variable definition

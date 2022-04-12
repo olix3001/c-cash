@@ -32,6 +32,7 @@ namespace parser {
         GET_ALLOCA = 19,
         DOUBLE_LITERAL = 20,
         ARRAY_DEFINITION = 21,
+        ARRAY_CALL = 22,
     };
         
     struct Scope {

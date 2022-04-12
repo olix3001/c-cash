@@ -32,6 +32,7 @@ namespace compiler {
     llvm::Value* compileVariableCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileString(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileArrayDef(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
+    llvm::Value* compileArrayCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileVariableAssignment(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileFunctionCall(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileMath(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);

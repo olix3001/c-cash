@@ -227,6 +227,28 @@ namespace parser {
         return returnToken;
     }
 
+    std::optional<Statement*> Parser::expect_array_call() {
+        int tBegin = cTokenI;
+        // TODO: allow nested array call and other statements than variable call
+        std::optional<Statement*> nameToken = expect_variable_call();
+        if (!nameToken.has_value()) return std::nullopt;
+
+        if (!expect_operator("[").has_value()) { cTokenI = tBegin - 1; get_next(); return std::nullopt; }
+
+        std::optional<tokenizer::Token*> index = expect_integer();
+        if (!index.has_value()) { error(cToken, "Expected array index"); }
+        if (!expect_operator("]").has_value()) { error(cToken, "Expected ']'"); }
+
+
+        Statement* acs = new Statement(StatementType::ARRAY_CALL, "");
+        Statement* is = new Statement(StatementType::INTEGER_LITERAL, index.value()->value);
+        acs->statements.emplace_back(nameToken.value());
+        acs->statements.emplace_back(is);
+
+
+        return acs;
+    }
+
     std::optional<Statement*> Parser::expect_variable_call() {
         std::optional<tokenizer::Token*> nameToken = expect_identifier();
         if (!nameToken.has_value()) return std::nullopt;
@@ -545,6 +567,11 @@ namespace parser {
 
         // variable assignment
         if (!skipLog && (cs = expect_variable_assignment()).has_value()) {
+            return cs.value();
+        }
+
+        // array
+        if ((cs = expect_array_call()).has_value()) {
             return cs.value();
         }
 

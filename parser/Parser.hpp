@@ -39,6 +39,7 @@ namespace parser {
             static std::optional<Statement*> expect_import();
             static std::optional<Statement*> expect_expression(bool skip_semicolon = false);
             static std::optional<Statement*> expect_variable_call();
+            static std::optional<Statement*> expect_array_call();
             static std::optional<Statement*> expect_value_expression(bool skipBin, bool skipLog);
             static std::optional<Statement*> expect_function_call();
             static std::optional<Statement*> expect_type_cast();
