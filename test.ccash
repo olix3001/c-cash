@@ -1,4 +1,10 @@
+def int factorial(int a) {
+    if (a <= 0) return 1;
+
+    return a * factorial(a-1);
+}
+
 def int main() {
-    var int[4] a = [1, 2, 3, 4];
-    return a[2];
+    printf("%d", factorial(5));
+    return 0;
 }

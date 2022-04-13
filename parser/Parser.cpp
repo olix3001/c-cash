@@ -546,20 +546,24 @@ namespace parser {
             return cs.value();
         }
 
+
         // get alloca
         if ((cs = expect_get_alloca()).has_value()) { 
             return cs.value();
         }
+
 
         // type cast
         if ((cs = expect_type_cast()).has_value()) { 
             return cs.value();
         }
 
+
         // binary expression
         if (!skipBin && (cs = expect_binary_expression()).has_value()) {
             return cs.value();
         }
+
 
         if (!skipLog && (cs = expect_logic_expression()).has_value()) {
             return cs.value();
@@ -570,8 +574,14 @@ namespace parser {
             return cs.value();
         }
 
+
         // array
         if ((cs = expect_array_call()).has_value()) {
+            return cs.value();
+        }
+
+        // function call
+        if ((cs = expect_function_call()).has_value()) { 
             return cs.value();
         }
 
@@ -579,6 +589,7 @@ namespace parser {
         if ((cs = expect_variable_call()).has_value()) {
             return cs.value();
         }
+
 
         // array
         if ((cs = expect_array()).has_value()) {
@@ -606,11 +617,6 @@ namespace parser {
         }
         if ((ct = expect_boolean()).has_value()) {
             return new Statement(StatementType::BOOLEAN_LITERAL, ct.value()->value);
-        }
-
-        // function call
-        if ((cs = expect_function_call()).has_value()) { 
-            return cs.value();
         }
 
         return std::nullopt;
