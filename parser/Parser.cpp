@@ -17,7 +17,7 @@ namespace parser {
     }
 
     void Parser::saveCompilation(llvm::Module* mod, const std::string& filename) {
-        #ifdef __linux__ 
+        // #ifdef __linux__ 
 
         auto TargetTriple = llvm::sys::getDefaultTargetTriple();
 
@@ -64,9 +64,9 @@ namespace parser {
         pass.run(*mod);
         dest.flush();
 
-        #else
-        return;
-        #endif
+        // #else
+        // return;
+        // #endif
 
     }
 

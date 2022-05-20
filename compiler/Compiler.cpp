@@ -11,7 +11,7 @@ namespace compiler {
     llvm::LLVMContext llvmContext;
     llvm::IRBuilder<> Builder(llvmContext);
     
-    llvm::Module* compileModule(std::vector<parser::Statement*> module, const std::string& name) {
+    llvm::Module* compileModule(std::vector<parser::Statement*> module, const std::string& name, const std::string& path) {
         // create module
         llvm::Module* mod = new llvm::Module(name, llvmContext);
 
@@ -19,7 +19,7 @@ namespace compiler {
             if (s->type == parser::StatementType::FUNCTION_DEFINITION) {
                 compileFunction(s, mod);
             } else if (s->type == parser::StatementType::IMPORT) {
-                compileImport(s, mod);
+                compileImport(s, mod, path);
             }
         }
         
@@ -41,10 +41,15 @@ namespace compiler {
         return path.substr(path.find_last_of("/\\") + 1);
     }
 
-    llvm::Module* compileImport(parser::Statement* statement, llvm::Module* mod) {
+    llvm::Module* compileImport(parser::Statement* statement, llvm::Module* mod, const std::string& path) {
         // get code
         std::ifstream file;
-        file.open(statement->value);
+
+        fs::path a (path);
+        fs::path b (statement->value);
+        fs::path r = a/b;
+            
+        file.open(r)l
 
         std::string line, allCode="";
         while (std::getline(file, line)) {
@@ -59,7 +64,7 @@ namespace compiler {
         std::vector<parser::Statement*> AST = parser::Parser::parse(tokens);
 
         // compile
-        llvm::Module* im = compileModule(AST, base_name(statement->value));
+        llvm::Module* im = compileModule(AST, base_name(statement->value), r);
 
         // declare functions in this module
         for (llvm::Function& m : im->getFunctionList()) {
