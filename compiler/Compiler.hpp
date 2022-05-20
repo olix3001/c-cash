@@ -17,13 +17,16 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/Verifier.h"
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 namespace compiler {
 
-    llvm::Module* compileModule(std::vector<parser::Statement*> module, const std::string& name);
+    llvm::Module* compileModule(std::vector<parser::Statement*> module, const std::string& name, const std::string& path);
 
     std::string base_name(std::string const & path);
 
-    llvm::Module* compileImport(parser::Statement* statement, llvm::Module* mod);
+    llvm::Module* compileImport(parser::Statement* statement, llvm::Module* mod, const std::string& path);
     llvm::Function* compileFunction(parser::Statement* statement, llvm::Module* mod);
     llvm::Value* compileExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);
     llvm::Value* compileValueExpression(parser::Statement* statement, llvm::Module* mod, llvm::Function* func, parser::Scope* scope);

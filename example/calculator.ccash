@@ -1,0 +1,38 @@
+
+import library.ccash;
+
+def int main() {
+    
+    printf("Input number a: ");
+    var int a = 0;
+    scanf("%d", &a);
+
+    printf("Input number b: ");
+    var int b = 0;
+    scanf("%d", &b);
+
+    printf("What operation you want to do? [+,-,*,/]: ");
+    var char op = 'a';
+    scanf(" %c", &op);
+
+    var int result = 0-1;
+
+
+    if (op == '+') {
+        result = add(a, b);
+    } else if (op == '-') {
+        result = sub(a, b);
+    } else if (op == '*') {
+        result = mul(a, b);
+    } else if (op == '/') {
+        result = div(a, b);
+    } else {
+        printf("There is no operation '%c'", op);
+        return 1;
+    }
+
+
+    printf("Result of %d %c %d is %d\n", a, op, b, result);
+
+    return 0;
+}

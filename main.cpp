@@ -9,6 +9,9 @@
 #include <iostream>
 #include <fstream>
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 int main(int argc, char **argv) {
 
     // create arg object
@@ -35,7 +38,9 @@ int main(int argc, char **argv) {
         s->debug_print(0);
     }
 
-    llvm::Module* mm = compiler::compileModule(AST, compiler::base_name(args[1]));
+    fs::path p (args[1]);
+
+    llvm::Module* mm = compiler::compileModule(AST, compiler::base_name(args[1]), p);
 
     parser::Parser::saveCompilation(mm, compiler::base_name(args[1]) + ".o");
 
