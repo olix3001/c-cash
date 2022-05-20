@@ -1,4 +1,3 @@
-
 import library.ccash;
 
 def int main() {
@@ -12,7 +11,7 @@ def int main() {
     scanf("%d", &b);
 
     printf("What operation you want to do? [+,-,*,/]: ");
-    var char op = 'a';
+    var char op = '+';
     scanf(" %c", &op);
 
     var int result = 0-1;
