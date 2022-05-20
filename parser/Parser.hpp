@@ -11,15 +11,22 @@
 #include "Statements.hpp"
 #include "../tokenizer/Tokenizer.hpp"
 
-#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
-#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/ADT/Optional.h"
+
+#include "llvm/Analysis/LoopAnalysisManager.h"
+#include "llvm/Analysis/CGSCCPassManager.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/IR/PassManager.h"
+
+#include "llvm/IR/LegacyPassManager.h"
+
 namespace parser {
 
     const std::string data_types[] = {"void", "int", "float", "double", "long", "bool", "char"};

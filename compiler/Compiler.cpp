@@ -47,15 +47,14 @@ namespace compiler {
 
         fs::path a (path);
         fs::path b (statement->value);
-        fs::path r = a/b;
+        fs::path r = a.parent_path()/b;
             
-        file.open(r)l
+        file.open(r);
 
         std::string line, allCode="";
         while (std::getline(file, line)) {
             allCode += line + '\n';
         }
-
 
         std::cout << "\u001B[32mCompiling module \u001B[36m" << statement->value << "\u001B[0m\n";
 
@@ -65,15 +64,14 @@ namespace compiler {
 
         // compile
         llvm::Module* im = compileModule(AST, base_name(statement->value), r);
-
         // declare functions in this module
         for (llvm::Function& m : im->getFunctionList()) {
             llvm::Function::Create(m.getFunctionType(), llvm::Function::ExternalLinkage, m.getName(), mod);
         }
-
         std::string objName = base_name(statement->value) + ".o";
-
         parser::Parser::saveCompilation(im, objName);
+
+        return im;
     }
 
     llvm::Function* compileFunction(parser::Statement* statement, llvm::Module* mod) {
@@ -139,6 +137,7 @@ namespace compiler {
     }
 
     llvm::Function* createFDeclaration(llvm::Module* mod, const std::string& name, llvm::Type* rt, std::vector<llvm::Type*> at, bool varargs) {
+        if (mod->getFunction(name) != nullptr) return mod->getFunction(name);
         llvm::FunctionType* ft = llvm::FunctionType::get(rt, at, varargs);
         return llvm::Function::Create(ft, llvm::Function::ExternalLinkage, name, mod);
     }

@@ -5,6 +5,6 @@ def int factorial(int a) {
 }
 
 def int main() {
-    printf("%d", factorial(5));
+    printf("%d", factorial(10));
     return 0;
 }

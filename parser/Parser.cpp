@@ -53,6 +53,25 @@ namespace parser {
             return;
         }
 
+        
+        // Pass manager
+        // llvm::LoopAnalysisManager LAM;
+        // llvm::FunctionAnalysisManager FAM;
+        // llvm::CGSCCAnalysisManager CGAM;
+        // llvm::ModuleAnalysisManager MAM;
+
+        // llvm::PassBuilder PB;
+
+        // PB.registerModuleAnalyses(MAM);
+        // PB.registerCGSCCAnalyses(CGAM);
+        // PB.registerFunctionAnalyses(FAM);
+        // PB.registerLoopAnalyses(LAM);
+        // PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+        // llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::PassBuilder::OptimizationLevel::O2);
+
+        // MPM.run(*mod, MAM);
+
         llvm::legacy::PassManager pass;
         auto FileType = llvm::CGFT_ObjectFile;
 
@@ -178,7 +197,7 @@ namespace parser {
         if(cToken->type != tokenizer::TokenType::OPERATOR ) { return std::nullopt; }
         get_next();
 
-        if(cToken->type != tokenizer::TokenType::IDENTIFIER || cToken->value.size() != 1) { cTokenI-=2; get_next(); return std::nullopt; }
+        if(cToken->value.size() != 1) { cTokenI-=2; get_next(); return std::nullopt; }
         tokenizer::Token* returnToken = cToken;
         get_next();
 

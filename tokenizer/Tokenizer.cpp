@@ -7,10 +7,42 @@ namespace tokenizer {
         Token currentToken;
         currentToken.value = "";
 
-        for (char cChar : data) {
+        for (int k = 0; k<data.size(); ++k) {
+            char cChar = data[k];
             ++currentToken.charNo;
             
-            if (cChar == ' ' || cChar == '\n' || cChar == '\t') { // whitespace, new line etc
+            if(cChar == '"') {
+                currentToken.type = TokenType::OPERATOR;
+                currentToken.value = "\"";                
+                tokens.emplace_back(currentToken);
+                currentToken.type = TokenType::IDENTIFIER;
+                currentToken.value = "";
+                ++k;
+                cChar = data[k];
+
+                while (cChar != '"') {
+                    if (cChar == '\\') {
+                        ++k;
+                        cChar = data[k];
+                        if (cChar == 'n') {
+                            currentToken.value.append(1, '\n');
+                        } else if (cChar == 't') {
+                            currentToken.value.append(1, '\t');
+                        }
+                    } else {
+                        currentToken.value.append(1, cChar);
+                    }
+                    ++k;
+                    cChar = data[k];
+                }    
+
+                tokens.emplace_back(currentToken);
+                currentToken.type = TokenType::OPERATOR;
+                currentToken.value = "\"";                
+                tokens.emplace_back(currentToken);
+                currentToken.type = TokenType::UNDEFINED;
+                currentToken.value = "";
+            } else if (cChar == ' ' || cChar == '\n' || cChar == '\t') { // whitespace, new line etc
                     if (currentToken.type != TokenType::UNDEFINED) {
                         tokens.emplace_back(currentToken);
                         currentToken.type = TokenType::UNDEFINED;
@@ -63,6 +95,8 @@ namespace tokenizer {
                         t->value = "\n";
                     } else if (cChar == 't') {
                         t->value = "\t";
+                    } else if (cChar == 's') {
+                        t->value = " ";
                     }
 
                     currentToken.type = TokenType::UNDEFINED;
