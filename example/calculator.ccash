@@ -15,7 +15,7 @@ def int main() {
     scanf(" %c", &op);
 
     var int result = 0-1;
-
+    var bool isErr = #bool 0;
 
     if (op == '+') {
         result = add(a, b);
@@ -26,12 +26,13 @@ def int main() {
     } else if (op == '/') {
         result = div(a, b);
     } else {
-        printf("There is no operation '%c'", op);
-        return 1;
+        printf("There is no operation %c\n", op);
+        isErr = #bool 1;
     }
-
-
-    printf("Result of %d %c %d is %d\n", a, op, b, result);
+    
+    if (isErr == #bool 0) {
+    	printf("Result of %d %c %d is %d\n", a, op, b, result);
+    }
 
     return 0;
 }
