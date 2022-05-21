@@ -13,3 +13,13 @@ def int mul(int a, int b) {
 def int div(int a, int b) {
     return a/b;
 }
+
+def int pow(int a, int b) {
+    var int r = 1;
+
+    for(var int i=0; i<b; i = i + 1) {
+        r = r*a;
+    }
+
+    return r;
+}

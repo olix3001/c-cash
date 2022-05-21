@@ -10,7 +10,7 @@ def int main() {
     var int b = 0;
     scanf("%d", &b);
 
-    printf("What operation you want to do? [+,-,*,/]: ");
+    printf("What operation you want to do? [+,-,*,/,^]: ");
     var char op = '+';
     scanf(" %c", &op);
 
@@ -25,6 +25,8 @@ def int main() {
         result = mul(a, b);
     } else if (op == '/') {
         result = div(a, b);
+    } else if (op == '^') {
+        result = pow(a, b);
     } else {
         printf("There is no operation %c\n", op);
         isErr = #bool 1;

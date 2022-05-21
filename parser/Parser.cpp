@@ -293,12 +293,16 @@ namespace parser {
     }
 
     std::optional<Statement*> Parser::expect_variable_assignment() {
+
+        int bTokenI = cTokenI;
+
         // expect variable name
         std::optional<tokenizer::Token*> nameToken = expect_identifier();
         if (!nameToken.has_value()) { return std::nullopt; }
 
         // expect initialization
-        if (!expect_operator("=").has_value()) { cTokenI -= 2; get_next(); return std::nullopt; }
+        if (!expect_operator("=").has_value()) { cTokenI = bTokenI-1; get_next(); return std::nullopt; }
+        if (expect_operator("=").has_value()) { cTokenI = bTokenI-1; get_next(); return std::nullopt; }
 
         // expect value
         std::optional<Statement*> defVal = expect_value_expression(false, false);
@@ -583,13 +587,12 @@ namespace parser {
             return cs.value();
         }
 
-
-        if (!skipLog && (cs = expect_logic_expression()).has_value()) {
+        // variable assignment
+        if (!skipLog && (cs = expect_variable_assignment()).has_value()) {
             return cs.value();
         }
 
-        // variable assignment
-        if (!skipLog && (cs = expect_variable_assignment()).has_value()) {
+        if (!skipLog && (cs = expect_logic_expression()).has_value()) {
             return cs.value();
         }
 

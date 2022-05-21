@@ -60,7 +60,16 @@ namespace compiler {
 
         // tokenize and parse
         std::vector<tokenizer::Token> tokens = tokenizer::tokenize(allCode);
+
+        for (auto t : tokens) {
+            t.debug_print();
+        }
+
         std::vector<parser::Statement*> AST = parser::Parser::parse(tokens);
+
+        for (auto s : AST) {
+            s->debug_print(0);
+        }  
 
         // compile
         llvm::Module* im = compileModule(AST, base_name(statement->value), r);
