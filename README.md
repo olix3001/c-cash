@@ -14,4 +14,4 @@ cmake ..
 make
 ```
 
-- use `./c-cash` :D
+- use `./c-cash <main file>` to compile the code, and then use clang to compile created `.o` files
